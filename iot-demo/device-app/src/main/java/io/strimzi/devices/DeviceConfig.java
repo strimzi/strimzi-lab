@@ -66,4 +66,15 @@ public class DeviceConfig {
     public String topicTemperature() {
         return this.topicTemperature;
     }
+
+    @Override
+    public String toString() {
+        return "DeviceConfig(" +
+                "bootstrapServers=" + bootstrapServers +
+                "delay=" + delay +
+                "minTemperature=" + minTemperature +
+                "maxTemperature=" + maxTemperature +
+                "topicTemperature=" + topicTemperature +
+                ")";
+    }
 }

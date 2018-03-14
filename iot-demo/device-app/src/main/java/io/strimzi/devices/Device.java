@@ -7,10 +7,14 @@ import io.vertx.kafka.client.producer.KafkaProducer;
 import io.vertx.kafka.client.producer.KafkaProducerRecord;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Properties;
 
 public class Device extends AbstractVerticle {
+
+    public static final Logger log = LoggerFactory.getLogger(Device.class);
 
     private DeviceConfig config;
     private KafkaProducer<String, String> producer;
@@ -23,6 +27,9 @@ public class Device extends AbstractVerticle {
 
     @Override
     public void start(Future<Void> start) throws Exception {
+
+        log.info("Device started");
+        log.info("Config: {}", this.config);
 
         this.dht22 = new DHT22();
         Properties dht22Config = new Properties();
@@ -39,6 +46,8 @@ public class Device extends AbstractVerticle {
             KafkaProducerRecord<String, String> record =
                     KafkaProducerRecord.create(this.config.topicTemperature(), null, String.valueOf(temperature));
 
+            log.info("Sending temperature = {}", temperature);
+
             producer.write(record);
         });
 
@@ -50,6 +59,8 @@ public class Device extends AbstractVerticle {
 
         this.producer.close();
         this.vertx.cancelTimer(this.timerId);
+
+        log.info("Device stopped");
 
         stop.complete();
     }

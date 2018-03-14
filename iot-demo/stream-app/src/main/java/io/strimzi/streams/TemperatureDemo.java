@@ -31,6 +31,8 @@ import org.apache.kafka.streams.kstream.TimeWindows;
 import org.apache.kafka.streams.kstream.Windowed;
 import org.apache.kafka.streams.kstream.internals.WindowedDeserializer;
 import org.apache.kafka.streams.kstream.internals.WindowedSerializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
@@ -67,16 +69,38 @@ import java.util.concurrent.TimeUnit;
  */
 public class TemperatureDemo {
 
+    private static final Logger log = LoggerFactory.getLogger(TemperatureDemo.class);
+
     // threshold used for filtering max temperature values
     private static final int TEMPERATURE_THRESHOLD = 20;
     // window size within which the filtering is applied
     private static final int TEMPERATURE_WINDOW_SIZE = 5;
 
+    private static final String BOOTSTRAP_SERVERS = "BOOTSTRAP_SERVERS";
+    private static final String TOPIC_TEMPERATURE = "TOPIC_TEMPERATURE";
+    private static final String TOPIC_TEMPERATURE_MAX = "TOPIC_TEMPERATURE_MAX";
+
+    private static final String DEFAULT_BOOTSTRAP_SERVERS = "localhost:9092";
+    private static final String DEFAULT_TOPIC_TEMPERATURE = "iot-temperature";
+    private static final String DEFAULT_TOPIC_TEMPERATURE_MAX = "iot-temperature-max";
+
     public static void main(String[] args) throws Exception {
+
+        new TemperatureDemo().run();
+    }
+
+    public void run() {
+
+        String bootstrapServers = System.getenv().getOrDefault(BOOTSTRAP_SERVERS, DEFAULT_BOOTSTRAP_SERVERS);
+        String topicTemperature = System.getenv().getOrDefault(TOPIC_TEMPERATURE, DEFAULT_TOPIC_TEMPERATURE);
+        String topicTemperatureMax = System.getenv().getOrDefault(TOPIC_TEMPERATURE_MAX, DEFAULT_TOPIC_TEMPERATURE_MAX);
+
+        log.info("Started with config: bootstrapServers={}, topicTemperature={}, topicTemperatureMax={}",
+                bootstrapServers, topicTemperature, topicTemperatureMax);
 
         Properties props = new Properties();
         props.put(StreamsConfig.APPLICATION_ID_CONFIG, "streams-temperature");
-        props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+        props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass());
         props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass());
 
@@ -85,7 +109,7 @@ public class TemperatureDemo {
 
         StreamsBuilder builder = new StreamsBuilder();
 
-        KStream<String, String> source = builder.stream("iot-temperature");
+        KStream<String, String> source = builder.stream(topicTemperature);
 
         KStream<Windowed<String>, String> max = source
                 // temperature values are sent without a key (null), so in order
@@ -120,7 +144,7 @@ public class TemperatureDemo {
         Serde<Windowed<String>> windowedSerde = Serdes.serdeFrom(windowedSerializer, windowedDeserializer);
 
         // need to override key serde to Windowed<String> type
-        max.to("iot-temperature-max", Produced.with(windowedSerde, Serdes.String()));
+        max.to(topicTemperatureMax, Produced.with(windowedSerde, Serdes.String()));
 
         final KafkaStreams streams = new KafkaStreams(builder.build(), props);
         final CountDownLatch latch = new CountDownLatch(1);
