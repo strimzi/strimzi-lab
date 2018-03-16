@@ -1,0 +1,14 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: device-app
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        name: device-app
+    spec:
+      containers:
+        - name: device-app
+          image: strimzilab/device-app:latest
