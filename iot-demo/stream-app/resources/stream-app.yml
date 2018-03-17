@@ -19,3 +19,7 @@ spec:
               value: "iot-temperature"
             - name: TOPIC_TEMPERATURE_MAX
               value: "iot-temperature-max"
+            - name: TEMPERATURE_THRESHOLD
+              value: "20"
+            - name: TEMPERATURE_WINDOW_SIZE
+              value: "5"
