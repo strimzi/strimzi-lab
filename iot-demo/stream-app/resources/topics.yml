@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: iot-temperature
+  labels:
+    strimzi.io/kind: topic
+    strimzi.io/cluster: my-cluster
+data:
+  name: iot-temperature
+  partitions: "1"
+  replicas: "1"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: iot-temperature-max
+  labels:
+    strimzi.io/kind: topic
+    strimzi.io/cluster: my-cluster
+data:
+  name: iot-temperature-max
+  partitions: "1"
+  replicas: "1"
