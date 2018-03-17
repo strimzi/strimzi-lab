@@ -12,3 +12,14 @@ spec:
       containers:
         - name: device-app
           image: strimzilab/device-app:latest
+          env:
+            - name: BOOTSTRAP_SERVERS
+              value: "my-cluster-kafka:9092"
+            - name: TOPIC_TEMPERATURE
+              value: "iot-temperature"
+            - name: DELAY
+              value: "1000"
+            - name: MIN_TEMPERATURE
+              value: "15"
+            - name: MAX_TEMPERATURE
+              value: "25"
