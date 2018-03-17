@@ -71,18 +71,19 @@ public class TemperatureDemo {
 
     private static final Logger log = LoggerFactory.getLogger(TemperatureDemo.class);
 
-    // threshold used for filtering max temperature values
-    private static final int TEMPERATURE_THRESHOLD = 20;
-    // window size within which the filtering is applied
-    private static final int TEMPERATURE_WINDOW_SIZE = 5;
-
     private static final String BOOTSTRAP_SERVERS = "BOOTSTRAP_SERVERS";
     private static final String TOPIC_TEMPERATURE = "TOPIC_TEMPERATURE";
     private static final String TOPIC_TEMPERATURE_MAX = "TOPIC_TEMPERATURE_MAX";
+    private static final String TEMPERATURE_THRESHOLD = "TEMPERATURE_THRESHOLD";
+    private static final String TEMPERATURE_WINDOW_SIZE = "TEMPERATURE_WINDOW_SIZE";
 
     private static final String DEFAULT_BOOTSTRAP_SERVERS = "localhost:9092";
     private static final String DEFAULT_TOPIC_TEMPERATURE = "iot-temperature";
     private static final String DEFAULT_TOPIC_TEMPERATURE_MAX = "iot-temperature-max";
+    // threshold used for filtering max temperature values
+    private static final int DEFAULT_TEMPERATURE_THRESHOLD = 20;
+    // window size within which the filtering is applied
+    private static final int DEFAULT_TEMPERATURE_WINDOW_SIZE = 5;
 
     public static void main(String[] args) throws Exception {
 
@@ -94,9 +95,11 @@ public class TemperatureDemo {
         String bootstrapServers = System.getenv().getOrDefault(BOOTSTRAP_SERVERS, DEFAULT_BOOTSTRAP_SERVERS);
         String topicTemperature = System.getenv().getOrDefault(TOPIC_TEMPERATURE, DEFAULT_TOPIC_TEMPERATURE);
         String topicTemperatureMax = System.getenv().getOrDefault(TOPIC_TEMPERATURE_MAX, DEFAULT_TOPIC_TEMPERATURE_MAX);
+        int temperatureThreshold = Integer.parseInt(System.getenv().getOrDefault(TEMPERATURE_THRESHOLD, String.valueOf(DEFAULT_TEMPERATURE_THRESHOLD)));
+        int temperatureWindowSize = Integer.parseInt(System.getenv().getOrDefault(TEMPERATURE_WINDOW_SIZE, String.valueOf(DEFAULT_TEMPERATURE_WINDOW_SIZE)));
 
-        log.info("Started with config: bootstrapServers={}, topicTemperature={}, topicTemperatureMax={}",
-                bootstrapServers, topicTemperature, topicTemperatureMax);
+        log.info("Started with config: bootstrapServers={}, topicTemperature={}, topicTemperatureMax={}, temperatureThreshold={}, temperatureWindowSize={}",
+                bootstrapServers, topicTemperature, topicTemperatureMax, temperatureThreshold, temperatureWindowSize);
 
         Properties props = new Properties();
         props.put(StreamsConfig.APPLICATION_ID_CONFIG, "streams-temperature");
@@ -121,7 +124,7 @@ public class TemperatureDemo {
                     }
                 })
                 .groupByKey()
-                .windowedBy(TimeWindows.of(TimeUnit.SECONDS.toMillis(TEMPERATURE_WINDOW_SIZE)))
+                .windowedBy(TimeWindows.of(TimeUnit.SECONDS.toMillis(temperatureWindowSize)))
                 .reduce(new Reducer<String>() {
                     @Override
                     public String apply(String value1, String value2) {
@@ -135,12 +138,12 @@ public class TemperatureDemo {
                 .filter(new Predicate<Windowed<String>, String>() {
                     @Override
                     public boolean test(Windowed<String> key, String value) {
-                        return Integer.parseInt(value) > TEMPERATURE_THRESHOLD;
+                        return Integer.parseInt(value) > temperatureThreshold;
                     }
                 });
 
         WindowedSerializer<String> windowedSerializer = new WindowedSerializer<>(Serdes.String().serializer());
-        WindowedDeserializer<String> windowedDeserializer = new WindowedDeserializer<>(Serdes.String().deserializer(), TEMPERATURE_WINDOW_SIZE);
+        WindowedDeserializer<String> windowedDeserializer = new WindowedDeserializer<>(Serdes.String().deserializer(), temperatureWindowSize);
         Serde<Windowed<String>> windowedSerde = Serdes.serdeFrom(windowedSerializer, windowedDeserializer);
 
         // need to override key serde to Windowed<String> type
