@@ -4,7 +4,9 @@ In order to run this demo, an OpenShift running cluster is needed. If you don't 
 [here](https://github.com/openshift/origin/releases) running the `oc cluster up` command or MiniShift from 
 [here](https://github.com/minishift/minishift) running `minishift start`.
 
-# Deploy Strimzi
+# Deploy Kafka cluster
+
+The needed Kafka cluster is deployed on OpenShift using the [Strimzi](http://strimzi.io/) project.
 
 ## The Cluster Controller
 
