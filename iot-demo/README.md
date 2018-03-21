@@ -1,3 +1,5 @@
+You can find [here](https://youtu.be/MljQnXZE1oY) a video of this demo running.
+
 # Prerequisites
 
 In order to run this demo, an OpenShift running cluster is needed. If you don't have it, you can use the oc tools from 
