@@ -10,7 +10,7 @@ spec:
         name: stream-app
     spec:
       containers:
-        - name: device-app
+        - name: stream-app
           image: strimzilab/stream-app:latest
           env:
             - name: BOOTSTRAP_SERVERS
