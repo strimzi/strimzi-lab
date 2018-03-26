@@ -33,4 +33,21 @@ spec:
   output:
     to:
       kind: ImageStreamTag
-      name: openjdk:latest
+      name: openjdk-custom:latest
+---
+kind: BuildConfig
+apiVersion: v1
+metadata:
+  name: device-app-build
+spec:
+  source:
+    type: Git
+    git:
+      uri: https://github.com/strimzi/strimzi-lab
+    contextDir: iot-demo/device-app
+  strategy:
+    type: source
+    sourceStrategy:
+      from:
+        kind: ImageStreamTag
+        name: openjdk-custom:latest
