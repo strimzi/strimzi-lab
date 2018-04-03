@@ -50,10 +50,22 @@ such topics.
 oc create -f ./stream-app/resources/topics.yml
 ```
 
-## Start a consumer
+## Deploy the consumer application
 
-Before running the needed application, it's useful to run a simple Kafka consumer for getting final messages from the 
-`iot-temperature-max` topic. One of the Kafka brokers can be used for that, running the console consumer on it.
+The consumer application uses Kafka client in order to get messages from the `iot-temperature-max` topic and showing them 
+in a Web UI.
+It's deployed running following command :
+
+```
+oc create -f ./consumer-app/resources/consumer-app.yml
+oc create -f ./consumer-app/resources/consumer-svc.yml
+oc create -f ./consumer-app/resources/consumer-route.yml
+```
+
+A route is provided in order to access the related Web UI.
+
+It's also possible to avoid running the consumer Web UI application and instead running a Kafka console consumer on one 
+of the Pods of the deployed Kafka cluster.
 
 ```
 oc exec -it my-cluster-kafka-0 -- bin/kafka-console-consumer.sh --bootstrap-server my-cluster-kafka:9092 --topic iot-temperature-max --from-beginning

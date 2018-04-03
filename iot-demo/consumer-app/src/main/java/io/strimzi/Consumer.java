@@ -76,9 +76,10 @@ public class Consumer {
 
         KafkaConsumer<String, String> consumer = KafkaConsumer.create(vertx, config, String.class, String.class);
         consumer.handler(record -> {
-            log.info("Received on topic={}, partition={}, offset={}, value={}",
-                    record.topic(), record.partition(), record.offset(), record.value());
-            vertx.eventBus().publish("dashboard", record.value());
+            log.info("Received on topic={}, partition={}, offset={}, key={}, value={}",
+                    record.topic(), record.partition(), record.offset(), record.key(), record.value());
+            String data = record.key() + " " + record.value();
+            vertx.eventBus().publish("dashboard", data);
         });
 
         consumer.partitionsAssignedHandler(topicPartitions -> {
