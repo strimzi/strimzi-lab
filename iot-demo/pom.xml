@@ -12,6 +12,7 @@
   <modules>
     <module>stream-app</module>
     <module>device-app</module>
+    <module>consumer-app</module>
   </modules>
 
   <properties>

@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title></title>
+    <!-- PatternFly Styles -->
+
+    <!-- PatternFly Styles -->
+    <link rel="stylesheet" href="dist/css/patternfly.min.css">
+    <link rel="stylesheet" href="dist/css/patternfly-additions.min.css">
+
+    <!-- jQuery CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+
+    <!-- Bootstrap JS CDN -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+    <!-- Patternfly JS -->
+    <script src="dist/js/patternfly.min.js"></script>
+
+    <!-- SockJS bridging and Vert.x Event Bus -->
+    <script src="sockjs.min.js"></script>
+    <script src="vertx-eventbus.js"></script>
+
+    <style media="screen">
+      .log {
+        background: #f1f1f1;
+        height: calc(100vh - 280px);
+        overflow-y: scroll;
+        padding: 20px;
+        margin-top: 20px;
+      }
+    </style>
+
+  </head>
+  <body>
+
+    <nav class="navbar navbar-default navbar-pf" role="navigation">
+      <div class="navbar-header">
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse-11">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="/">
+          <img src="dist/img/brand.svg" alt="PatternFly Enterprise Application" />
+        </a>
+      </div>
+    </nav>
+
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-sm-8 col-md-9">
+          <div class="page-header page-header-bleed-right">
+            <h1>Apache Kafka Messages Dashboard</h1>
+          </div>
+          <div>
+            <strong><p id="status"></p></strong>
+          </div>
+
+
+          <form class="form-inline">
+            <button type="button" class="btn btn-primary" id="seekToBegin">From Begin</button>
+            <div class="form-group">
+              <div class="input-group">
+                <input type="text" class="form-control" placeholder="offset ..." id="offset">
+                <span class="input-group-btn">
+                  <button class="btn btn-default" type="button" id="seek">Seek!</button>
+                  <button class="btn btn-default" type="button" id="clean">Clean!</button>
+                </span>
+              </div><!-- /input-group -->
+            </div>
+          </form>
+
+          <ul class="list-unstyled log" id="messages"></ul>
+
+        </div><!-- /col -->
+
+        <div class="col-sm-4 col-md-3 sidebar-pf sidebar-pf-right">
+          <div class="sidebar-header sidebar-header-bleed-left sidebar-header-bleed-right">
+            <h2 class="h5">More Information</h2>
+          </div>
+          <p>The log window shows you messages read from an Apache Kafka cluster in real time while they come.</p>
+          <p>In order to re-read the entire stream, the "From Begin" button can be used.</p>
+          <p>For seeking the consumer to a specific offset in the stream, the offset can be specified in the field then using "Seek"</p>
+        </div><!-- /col -->
+      </div><!-- /row -->
+    </div>
+
+    <script>
+      var eb = new EventBus("http://" + location.host + "/eventbus");
+
+      eb.onopen = function() {
+
+        // handler for getting messages to show in the dashboard
+        eb.registerHandler("dashboard", function(error, message) {
+          $('#messages').prepend('<li>' + message.body + '</li>');
+        });
+
+        // handler for getting Kafka consumer status
+        eb.registerHandler("status", function(error, message) {
+          $('#status').text(message.body);
+        });
+
+        // asking for Kafka consumer status on startup
+        eb.publish("config", "status");
+      };
+
+      $('#seekToBegin').click(function() {
+        $('#messages').empty();
+        eb.publish("config", "seektobegin");
+      });
+
+      $('#seek').click(function() {
+        $('#messages').empty();
+
+        var offset = $('#offset').val();
+        var headers = {
+          "offset" : offset
+        }
+
+        eb.publish("config", "seek", headers);
+      });
+
+      $('#clean').click(function() {
+        $('#messages').empty();
+      });
+    </script>
+
+  </body>
+</html>
