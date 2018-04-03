@@ -20,9 +20,11 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
+import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.kstream.KStream;
+import org.apache.kafka.streams.kstream.KeyValueMapper;
 import org.apache.kafka.streams.kstream.Predicate;
 import org.apache.kafka.streams.kstream.Produced;
 import org.apache.kafka.streams.kstream.Reducer;
@@ -133,12 +135,24 @@ public class TemperatureDemo {
                     }
                 });
 
+        /*
         WindowedSerializer<String> windowedSerializer = new WindowedSerializer<>(Serdes.String().serializer());
         WindowedDeserializer<String> windowedDeserializer = new WindowedDeserializer<>(Serdes.String().deserializer(), temperatureWindowSize);
         Serde<Windowed<String>> windowedSerde = Serdes.serdeFrom(windowedSerializer, windowedDeserializer);
 
         // need to override key serde to Windowed<String> type
         max.to(topicTemperatureMax, Produced.with(windowedSerde, Serdes.String()));
+        */
+
+        // remapping to a key with user/device-id and removing the window start/end part
+        KStream<String, String> max2 = max.map(new KeyValueMapper<Windowed<String>, String, KeyValue<String, String>>() {
+            @Override
+            public KeyValue<String, String> apply(Windowed<String> stringWindowed, String s) {
+                return new KeyValue<>(stringWindowed.key(), s);
+            }
+        });
+
+        max2.to(topicTemperatureMax);
 
         final KafkaStreams streams = new KafkaStreams(builder.build(), props);
         final CountDownLatch latch = new CountDownLatch(1);
