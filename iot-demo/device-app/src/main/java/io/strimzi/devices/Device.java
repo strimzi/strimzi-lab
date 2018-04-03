@@ -11,11 +11,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Properties;
+import java.util.UUID;
 
 public class Device extends AbstractVerticle {
 
     public static final Logger log = LoggerFactory.getLogger(Device.class);
 
+    private String id;
     private DeviceConfig config;
     private KafkaProducer<String, String> producer;
     private long timerId;
@@ -28,8 +30,10 @@ public class Device extends AbstractVerticle {
     @Override
     public void start(Future<Void> start) throws Exception {
 
+        this.id = UUID.randomUUID().toString();
+
         log.info("Device started");
-        log.info("Config: {}", this.config);
+        log.info("Device ID: {}, Config: {}", this.id, this.config);
 
         this.dht22 = new DHT22();
         Properties dht22Config = new Properties();
@@ -44,7 +48,7 @@ public class Device extends AbstractVerticle {
             int temperature = this.dht22.getTemperature();
 
             KafkaProducerRecord<String, String> record =
-                    KafkaProducerRecord.create(this.config.topicTemperature(), null, String.valueOf(temperature));
+                    KafkaProducerRecord.create(this.config.topicTemperature(), this.id, String.valueOf(temperature));
 
             log.info("Sending temperature = {}", temperature);
 
