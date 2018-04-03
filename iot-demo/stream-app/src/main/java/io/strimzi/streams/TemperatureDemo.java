@@ -23,7 +23,6 @@ import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.kstream.KStream;
-import org.apache.kafka.streams.kstream.KeyValueMapper;
 import org.apache.kafka.streams.kstream.Predicate;
 import org.apache.kafka.streams.kstream.Produced;
 import org.apache.kafka.streams.kstream.Reducer;
@@ -115,14 +114,6 @@ public class TemperatureDemo {
         KStream<String, String> source = builder.stream(topicTemperature);
 
         KStream<Windowed<String>, String> max = source
-                // temperature values are sent without a key (null), so in order
-                // to group and reduce them, a key is needed ("temp" has been chosen)
-                .selectKey(new KeyValueMapper<String, String, String>() {
-                    @Override
-                    public String apply(String key, String value) {
-                        return "temp";
-                    }
-                })
                 .groupByKey()
                 .windowedBy(TimeWindows.of(TimeUnit.SECONDS.toMillis(temperatureWindowSize)))
                 .reduce(new Reducer<String>() {
