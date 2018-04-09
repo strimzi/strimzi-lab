@@ -34,6 +34,18 @@
         padding: 20px;
         margin-top: 20px;
       }
+
+      .gauges {
+        display: flex;
+        flex-wrap: wrap;
+      }
+
+      .item {
+        margin: 1rem;
+        padding: 1rem;
+        border: 1px solid #f1f1f1;
+        flex: 0 0 350px;
+      }
     </style>
 
   </head>
@@ -63,7 +75,7 @@
             <strong><p id="status"></p></strong>
           </div>
 
-          <div id="gauges"></div>
+          <div class="gauges" id="gauges"></div>
 
         </div><!-- /col -->
 
@@ -106,7 +118,7 @@
 
           if (devices[message.body.key] == undefined) {
 
-            $('#gauges').append('<div id=' + message.body.key + '></div>');
+            $('#gauges').append('<div class="item" id=item-' + message.body.key + '><div id=' + message.body.key + '></div></div>');
 
             var chart = c3.generate({
               bindto: '#' + message.body.key,
@@ -182,7 +194,7 @@
           var now = new Date();
           if (now - devices[key].timestamp > 10000) {
             delete devices[key]
-            $('#' + key).remove();
+            $('#item-' + key).remove();
           }
         }
       }, 1000);
