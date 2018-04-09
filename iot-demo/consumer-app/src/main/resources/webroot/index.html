@@ -95,7 +95,7 @@
 
         // handler for getting messages to show in the dashboard
         eb.registerHandler("dashboard", function(error, message) {
-          $('#messages').prepend('<li>' + message.body + '</li>');
+          $('#messages').prepend('<li>' + message.body.key + ' ' + message.body.value + '</li>');
         });
 
         // handler for getting Kafka consumer status

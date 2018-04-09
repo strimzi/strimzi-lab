@@ -2,6 +2,7 @@ package io.strimzi;
 
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServer;
+import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.StaticHandler;
 import io.vertx.ext.web.handler.sockjs.BridgeOptions;
@@ -78,8 +79,10 @@ public class Consumer {
         consumer.handler(record -> {
             log.info("Received on topic={}, partition={}, offset={}, key={}, value={}",
                     record.topic(), record.partition(), record.offset(), record.key(), record.value());
-            String data = record.key() + " " + record.value();
-            vertx.eventBus().publish("dashboard", data);
+            JsonObject json = new JsonObject();
+            json.put("key", record.key());
+            json.put("value", record.value());
+            vertx.eventBus().publish("dashboard", json);
         });
 
         consumer.partitionsAssignedHandler(topicPartitions -> {
