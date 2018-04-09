@@ -63,6 +63,18 @@
             <strong><p id="status"></p></strong>
           </div>
 
+          <div id="gauges"></div>
+
+        </div><!-- /col -->
+
+        <div class="col-sm-4 col-md-3 sidebar-pf sidebar-pf-right">
+          <div class="sidebar-header sidebar-header-bleed-left sidebar-header-bleed-right">
+            <h2 class="h5">More Information</h2>
+          </div>
+          <p>The log window shows you messages read from an Apache Kafka cluster in real time while they come.</p>
+          <p>In order to re-read the entire stream, the "From Begin" button can be used.</p>
+          <p>For seeking the consumer to a specific offset in the stream, the offset can be specified in the field then using "Seek"</p>
+
           <form class="form-inline">
             <button type="button" class="btn btn-primary" id="seekToBegin">From Begin</button>
             <div class="form-group">
@@ -75,19 +87,7 @@
               </div><!-- /input-group -->
             </div>
           </form>
-
           <ul class="list-unstyled log" id="messages"></ul>
-
-        </div><!-- /col -->
-
-        <div class="col-sm-4 col-md-3 sidebar-pf sidebar-pf-right">
-          <div class="sidebar-header sidebar-header-bleed-left sidebar-header-bleed-right">
-            <h2 class="h5">More Information</h2>
-          </div>
-          <p>The log window shows you messages read from an Apache Kafka cluster in real time while they come.</p>
-          <p>In order to re-read the entire stream, the "From Begin" button can be used.</p>
-          <p>For seeking the consumer to a specific offset in the stream, the offset can be specified in the field then using "Seek"</p>
-          <div id="gauges"></div>
         </div><!-- /col -->
       </div><!-- /row -->
     </div>
