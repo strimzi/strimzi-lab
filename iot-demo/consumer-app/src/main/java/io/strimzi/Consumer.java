@@ -100,23 +100,6 @@ public class Consumer {
 
             switch (body) {
 
-                case SEEK_TO_BEGIN:
-
-                    consumer.seekToBeginning(assignedTopicPartitions);
-                    break;
-
-                case SEEK:
-
-                    try {
-                        long offset = Long.valueOf(message.headers().get("offset"));
-                        assignedTopicPartitions.stream().forEach(topicPartition -> {
-                            consumer.seek(topicPartition, offset);
-                        });
-                    } catch (NumberFormatException e) {
-                        log.error("The specified offset isn't a number", e);
-                    }
-                    break;
-
                 case STATUS:
 
                     if (assignedTopicPartitions != null) {
