@@ -30,7 +30,7 @@ public class Device extends AbstractVerticle {
     @Override
     public void start(Future<Void> start) throws Exception {
 
-        this.id = UUID.randomUUID().toString();
+        this.id = "d-" + UUID.randomUUID().toString();
 
         log.info("Device started");
         log.info("Device ID: {}, Config: {}", this.id, this.config);

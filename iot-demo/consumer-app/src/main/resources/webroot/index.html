@@ -22,6 +22,10 @@
     <script src="sockjs.min.js"></script>
     <script src="vertx-eventbus.js"></script>
 
+    <!-- C3 and D3 components for charts -->
+    <script src="dist/components/c3.min.js"></script>
+    <script src="dist/components/d3.min.js"></script>
+
     <style media="screen">
       .log {
         background: #f1f1f1;
@@ -59,7 +63,6 @@
             <strong><p id="status"></p></strong>
           </div>
 
-
           <form class="form-inline">
             <button type="button" class="btn btn-primary" id="seekToBegin">From Begin</button>
             <div class="form-group">
@@ -84,11 +87,17 @@
           <p>The log window shows you messages read from an Apache Kafka cluster in real time while they come.</p>
           <p>In order to re-read the entire stream, the "From Begin" button can be used.</p>
           <p>For seeking the consumer to a specific offset in the stream, the offset can be specified in the field then using "Seek"</p>
+          <div id="gauges">
+            <!--<div id="chart"></div>-->
+          </div>
         </div><!-- /col -->
       </div><!-- /row -->
     </div>
 
     <script>
+
+      var devices = { }
+
       var eb = new EventBus("http://" + location.host + "/eventbus");
 
       eb.onopen = function() {
@@ -96,6 +105,71 @@
         // handler for getting messages to show in the dashboard
         eb.registerHandler("dashboard", function(error, message) {
           $('#messages').prepend('<li>' + message.body.key + ' ' + message.body.value + '</li>');
+
+          if (devices[message.body.key] == undefined) {
+
+            $('#gauges').append('<div id=' + message.body.key + '></div>');
+
+            var chart = c3.generate({
+              bindto: '#' + message.body.key,
+              data: {
+                columns: [
+                    [message.body.key, 15]
+                ],
+                type: 'gauge'
+              },
+              gauge: {
+                label: {
+                  format: function(value, ratio) {
+                    return value;
+                  }
+                },
+                units: '°C',
+                max: 30
+              },
+              color: {
+                pattern: [ '#60B044', '#FF0000' ],
+                threshold: {
+                  unit: 'value',
+                  max: 30,
+                  values: [ 23 ]
+                }
+              }
+            });
+
+            devices[message.body.key] = chart;
+          }
+
+          devices[message.body.key].load({
+            columns: [[message.body.key, message.body.value]]
+          });
+
+          /*
+          if ($('#' + message.body.key).length == 0) {
+            var chart = c3.generate({
+              data: {
+                columns: [
+                    ['data', 15]
+                ],
+                type: 'gauge'
+              },
+              gauge: {
+                label: {
+                  format: function(value, ratio) {
+                    return value;
+                  }
+                },
+                units: '°C',
+                max: 30
+              }
+            });
+            $('#gauges').append('<div id="chart"></div>');
+          }
+          chart.load({
+              columns: [['data', message.body.value]]
+          });
+          */
+
         });
 
         // handler for getting Kafka consumer status
