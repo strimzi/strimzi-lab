@@ -50,6 +50,22 @@ such topics.
 oc create -f ./stream-app/resources/topics.yml
 ```
 
+![topics](../iot-demo/images/topics.png)
+
+In order to check that the topics are properly created on the Kafka cluster, it's possible to use the `kafka-topics.sh` script 
+(distributed with Kafka) running it on one of the broker.
+
+```
+oc exec -it my-cluster-kafka-0 -- bin/kafka-topics.sh --zookeeper my-cluster-zookeeper:2181 --list
+```
+
+The output of the above command should be something like the following showing the created topics.
+
+```
+iot-temperature
+iot-temperature-max
+```
+
 ## Deploy the consumer application
 
 The consumer application uses Kafka client in order to get messages from the `iot-temperature-max` topic and showing them 
@@ -63,6 +79,10 @@ oc create -f ./consumer-app/resources/consumer-route.yml
 ```
 
 A route is provided in order to access the related Web UI.
+
+![route](../iot-demo/images/route.png)
+
+![web ui](../iot-demo/images/web_ui.png)
 
 It's also possible to avoid running the consumer Web UI application and instead running a Kafka console consumer on one 
 of the Pods of the deployed Kafka cluster.
@@ -88,3 +108,18 @@ The device application provides a device simulator which sends temperature value
 ```
 oc create -f ./device-app/resources/device-app.yml
 ```
+
+Once deployed, it starts just one pod simulating one device.
+
+![one device gauge](../iot-demo/images/one_device_gauge.png)
+
+it's possible to scale up the number of pods in order to simulate more devices sending temperature values (each one with 
+a different and randomly generated id).
+
+![scale up device](../iot-demo/images/scale_up_device.png)
+
+Opening the consumer Web UI it's possible to see the "gauges" charts showing the processed max temperature values for all the 
+active devices on the left side. The right side is useful to see the log of the incoming messages from devices, showing the 
+device id alongside the max temperature value processed by the stream application for such a device.
+
+![more device gauges](../iot-demo/images/more_device_gauges.png)
