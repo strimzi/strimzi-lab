@@ -14,7 +14,7 @@ such topics.
 oc create -f https://raw.githubusercontent.com/strimzi/strimzi-lab/master/iot-demo/stream-app/resources/topics.yml
 ```
 
-![topics](images/topics.png)
+![topics](../iot-demo/images/topics.png)
 
 In order to check that the topics are properly created on the Kafka cluster, it's possible to use the `kafka-topics.sh` script 
 (distributed with Kafka) running it on one of the broker.
@@ -44,9 +44,9 @@ oc create -f https://raw.githubusercontent.com/strimzi/strimzi-lab/master/iot-de
 
 A route is provided in order to access the related Web UI.
 
-![route](images/route.png)
+![route](../iot-demo/images/route.png)
 
-![web ui](images/web_ui.png)
+![web ui](../iot-demo/images/web_ui.png)
 
 It's also possible to avoid running the consumer Web UI application and instead running a Kafka console consumer on one 
 of the Pods of the deployed Kafka cluster.
@@ -75,15 +75,15 @@ oc create -f https://raw.githubusercontent.com/strimzi/strimzi-lab/master/iot-de
 
 Once deployed, it starts just one pod simulating one device.
 
-![one device gauge](images/one_device_gauge.png)
+![one device gauge](../iot-demo/images/one_device_gauge.png)
 
 it's possible to scale up the number of pods in order to simulate more devices sending temperature values (each one with 
 a different and randomly generated id).
 
-![scale up device](images/scale_up_device.png)
+![scale up device](../iot-demo/images/scale_up_device.png)
 
 Opening the consumer Web UI it's possible to see the "gauges" charts showing the processed max temperature values for all the 
 active devices on the left side. The right side is useful to see the log of the incoming messages from devices, showing the 
 device id alongside the max temperature value processed by the stream application for such a device.
 
-![more device gauges](images/more_device_gauges.png)
+![more device gauges](../iot-demo/images/more_device_gauges.png)
