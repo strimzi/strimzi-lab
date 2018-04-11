@@ -1,9 +1,25 @@
 = Running data-streaming applications with Kafka on OpenShift
 
-:imagesdir:../iot-demo/images
+:sectnums:
+:toc:
+:toclevels: 3
+:toc-title: Content
+:imagesdir: ./images
 
-include::module-01.adoc
+== Overview
 
-include::module-02-adoc
+In this lab, you’ll learn the practical aspects of developing and running an end-to-end Kafka-based application on OpenShift.
 
-include::module-03.adoc
+- In the first part, you'll learn how to run Kafka clusters on OpenShift, then get practical instruction on how to monitor 
+and tune them for performance and resilience.
+
+- In the second part, you'll learn how to deploy Kafka-based applications on OpenShift by building an end-to-end solution 
+of multiple microservices communicating through Kafka. Specifically, you'll learn how to use Debezium to stream database 
+changes out of an existing application, how to run Kafka Connect sinks that write streaming data to external systems, 
+how to process data streams using Kafka Streams, and how to use create and deploy Kafka microservices using Red Hat OpenShift Application Runtimes.
+
+include::module-01.adoc[]
+
+include::module-02.adoc[]
+
+include::module-03.adoc[]

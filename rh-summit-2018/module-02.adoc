@@ -1,6 +1,6 @@
-= Running IoT demo with Kafka Streams API
+== Running IoT demo with Kafka Streams API
 
-== Create topics
+=== Create topics
 
 This demo uses a couple of topics. The first one named `iot-temperature` is used by the device simulator for sending 
 temperature values and by the stream application for getting such values and processing them. The second one is the 
@@ -27,7 +27,7 @@ The output of the above command should be something like the following showing t
 iot-temperature
 iot-temperature-max
 
-== Deploy the consumer application
+=== Deploy the consumer application
 
 The consumer application uses Kafka client in order to get messages from the `iot-temperature-max` topic and showing them 
 in a Web UI.
@@ -50,7 +50,7 @@ of the Pods of the deployed Kafka cluster.
 [source]
 oc exec -it my-cluster-kafka-0 -- bin/kafka-console-consumer.sh --bootstrap-server my-cluster-kafka:9092 --topic iot-temperature-max --from-beginning
 
-== Deploy the stream application
+=== Deploy the stream application
 
 The stream application uses Kafka Streams API reading from the `iot-temperature` topic, processing its values and then 
 putting the max temperature value in the specified time window into the `iot-temperature-max` topic.
@@ -59,7 +59,7 @@ It's deployed running following command :
 [source]
 oc create -f https://raw.githubusercontent.com/strimzi/strimzi-lab/master/iot-demo/stream-app/resources/stream-app.yml
 
-== Deploy the device application
+=== Deploy the device application
 
 The device application provides a device simulator which sends temperature values to the `iot-temperature` topic.
 
