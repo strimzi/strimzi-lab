@@ -1,5 +1,4 @@
 = Running data-streaming applications with Kafka on OpenShift
-
 :sectnums:
 :toc:
 :toclevels: 3
