@@ -1,0 +1,9 @@
+= Running data-streaming applications with Kafka on OpenShift
+
+:imagesdir:../iot-demo/images
+
+include::module-01.adoc
+
+include::module-02-adoc
+
+include::module-03.adoc
