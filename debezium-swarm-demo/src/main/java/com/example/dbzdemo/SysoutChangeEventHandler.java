@@ -24,11 +24,11 @@ import javax.json.JsonValue;
 import org.aerogear.kafka.cdi.annotation.Consumer;
 import org.aerogear.kafka.cdi.annotation.KafkaConfig;
 
-@KafkaConfig(bootstrapServers = "kafka:9092")
+@KafkaConfig(bootstrapServers = "broker-kafka:9092")
 @ApplicationScoped
 public class SysoutChangeEventHandler {
 
-    @Consumer(topics = "dbserver1_inventory_Hike_json", groupId = "sysout-handler")
+    @Consumer(topics = "dbserver1.inventory.Hike", groupId = "sysout-handler")
     public void receiver(String key, JsonObject value) {
         JsonValue payload = value.get( "payload" );
         String before = payload instanceof JsonObject ? ( (JsonObject)payload ).get( "before" ).toString() : "";

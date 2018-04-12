@@ -6,7 +6,7 @@
         <title>WebSocket Client</title>
  
         <script type="text/javascript">
-            var ws = new WebSocket("ws://localhost:8079/example");
+            var ws = new WebSocket("ws://" + document.location.hostname + "/example");
 
             ws.onopen = function() {
                 alert( "Web Socket is connected!" );
