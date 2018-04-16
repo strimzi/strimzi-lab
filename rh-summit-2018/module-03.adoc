@@ -106,6 +106,13 @@ oc exec -i broker-kafka-0 -- curl -X POST \
 EOF
 ----
 
+Kafka Connect’s log file should contain messages regarding execution of initial snapshot:
+
+[source]
+----
+oc logs $(oc get pods -o name -l app=strimzi-connect-s2i)
+----
+
 Examine CDC messages in Kafka (add/alter records in the web app and see how messages arrive in the topic):
 
 [source]
@@ -123,4 +130,43 @@ TODO
 
 === Consuming Data Change Events With WildFly Swarm
 
-TODO
+Finally, let's explore how to consume the Debezium events in a custom application and forward them to a web UI using WebSockets.
+
+Deploy the application:
+
+[source]
+----
+oc new-app --name=websocketsinkapp fabric8/s2i-java:latest~https://github.com/strimzi/strimzi-lab.git \
+    --context-dir=debezium-swarm-demo \
+    -e MYSQL_DATABASE=inventory \
+    -e AB_PROMETHEUS_OFF=true \
+    -e KAFKA_SERVICE_HOST=broker-kafka \
+    -e KAFKA_SERVICE_PORT=9092
+
+oc expose svc websocketsinkapp
+----
+
+One more more must be exposed for the application.
+In the OpenShift web console, go to "Applications" -> "Services" -> "websocketsinkapp" -> "Actions" -> "Edit YAML".
+Under "spec/ports", add an entry similar to the existing ones for port 8080:
+
+[source]
+----
+- name: 8080-tcp
+  port: 8080
+  protocol: TCP
+  targetPort: 8080
+----
+
+Hit "Save".
+
+Then edit the associated route to expose this new port:
+go to "Applications" -> "Routes" -> "websocketsinkapp" -> "Edit".
+Change the target port to 8080 and hit "Save".
+
+Visit the application in a new browser window:
+
+[source]
+http://websocketsinkapp-default.<YOUR_IP>.xip.io/
+
+Modify some entries in the CRUD application and observe how the change events are progated to the other browser window via WebSockets in near-realtime.
