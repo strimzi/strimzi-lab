@@ -1,3 +1,126 @@
-== Running hiking demo with Kafka Connect and Debezium
+== Change Data Capture with Kafka Connect and Debezium
 
-TBD
+This part of the lab introduces you to change data capture (CDC) using http://debezium.io/[Debezium].
+Debezium allows you to capture data changes from MySQL, Postgres and MongoDB and stream those events into Apache Kafka.
+It is based on Kafka Connect.
+
+In the following you'll learn the following things:
+
+* Setting up Kafka Connect with the Debezium CDC connectors
+* Setting up the Debezium MySQL connector, ingesting changes from an existing example CRUD application
+* Streaming Data Changes to a Postgres Sink Database using the Confluent JDBC sink connector
+* Setting up a WildFly Swarm application for consuming the same CDC events and stream them to a web browser via WebSockets
+
+=== Setting Up the Example Application
+
+We've prepared a small CRUD application which we'll use in the following as source of data change events.
+It is a Java EE application running on WildFly and using MySQL as its database.
+
+Start a MySQL instance by running:
+
+[source]
+oc new-app --name=mysql debezium/example-mysql:0.7
+oc env dc/mysql MYSQL_ROOT_PASSWORD=debezium MYSQL_USER=mysqluser MYSQL_PASSWORD=mysqlpw
+
+Then build and start the application.
+This uses the WildFly s2i ("source to image") builder image which will fetch the application's source code from the given location,
+build it using Maven and deploy it to WildFly, setting up a MySQL datasource using the given credentials:
+
+[source]
+oc new-app --name=hikingapp openshift/wildfly-120-centos7:latest~https://github.com/strimzi/strimzi-lab.git \
+    --context-dir=hiking-demo \
+    -e MYSQL_DATABASE=inventory \
+    -e MYSQL_PASSWORD=mysqlpw \
+    -e MYSQL_USER=mysqluser \
+    -e MYSQL_DATASOURCE=HikingDS
+oc expose svc hikingapp
+
+Verify that the pods of the database and the application are running:
+
+[source]
+oc get pods
+
+Access the application in your web browser:
+
+[source]
+http://hikingapp-default.<YOUR_IP>.xip.io//hikr-1.0-SNAPSHOT/hikes.html
+
+You can use "Populate Data" to create some example data.
+Otherwise just insert a few records as you like.
+
+=== Setting Up Kafka Connect With the Debezium Connectors
+
+Deploy Kafka via Strimzi (TODO: should already be done as part of module 1):
+
+[source]
+----
+export STRIMZI_VERSION=0.2.0
+git clone -b $STRIMZI_VERSION https://github.com/strimzi/strimzi
+cd strimzi
+
+oc create -f examples/install/cluster-controller && oc create -f examples/templates/cluster-controller
+
+oc new-app strimzi-ephemeral -p CLUSTER_NAME=broker -p ZOOKEEPER_NODE_COUNT=1 -p KAFKA_NODE_COUNT=1 -p KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1 -p KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
+----
+
+Deploy Kafka Connect With Debezium:
+
+[source]
+----
+oc new-app strimzi-connect-s2i -p CLUSTER_NAME=debezium -p KAFKA_CONNECT_BOOTSTRAP_SERVERS=broker-kafka:9092 -p KAFKA_CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR=1 -p KAFKA_CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR=1 -p KAFKA_CONNECT_STATUS_STORAGE_REPLICATION_FACTOR=1
+
+export DEBEZIUM_VERSION=0.7.5
+mkdir -p plugins && cd plugins && \
+for PLUGIN in {mongodb,mysql,postgres}; do \
+    curl http://central.maven.org/maven2/io/debezium/debezium-connector-$PLUGIN/$DEBEZIUM_VERSION/debezium-connector-$PLUGIN-$DEBEZIUM_VERSION-plugin.tar.gz | tar xz; \
+done && \
+oc start-build debezium-connect --from-dir=. --follow && \
+cd .. && rm -rf plugins
+----
+
+Register an instance of the Debezium MySQL connector:
+
+[source]
+----
+oc exec -i broker-kafka-0 -- curl -X POST \
+    -H "Accept:application/json" \
+    -H "Content-Type:application/json" \
+    http://debezium-connect:8083/connectors -d @- <<'EOF'
+
+{
+    "name": "inventory-connector",
+    "config": {
+        "connector.class": "io.debezium.connector.mysql.MySqlConnector",
+        "tasks.max": "1",
+        "database.hostname": "mysql",
+        "database.port": "3306",
+        "database.user": "debezium",
+        "database.password": "dbz",
+        "database.server.id": "184054",
+        "database.server.name": "dbserver1",
+        "database.whitelist": "inventory",
+        "database.history.kafka.bootstrap.servers": "broker-kafka:9092",
+        "database.history.kafka.topic": "schema-changes.inventory"
+    }
+}
+EOF
+----
+
+Examine CDC messages in Kafka (add/alter records in the web app and see how messages arrive in the topic):
+
+[source]
+----
+oc exec -it broker-kafka-0 -- /opt/kafka/bin/kafka-console-consumer.sh \
+   --bootstrap-server localhost:9092 \
+   --from-beginning \
+   --property print.key=true \
+   --topic dbserver1.inventory.Hike
+----
+
+=== Streaming Data Changes to a Postgres Sink Database
+
+TODO
+
+=== Consuming Data Change Events With WildFly Swarm
+
+TODO
