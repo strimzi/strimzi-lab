@@ -24,7 +24,7 @@ import javax.json.JsonValue;
 import org.aerogear.kafka.cdi.annotation.Consumer;
 import org.aerogear.kafka.cdi.annotation.KafkaConfig;
 
-@KafkaConfig(bootstrapServers = "broker-kafka:9092")
+@KafkaConfig(bootstrapServers = "#{KAFKA_SERVICE_HOST}:#{KAFKA_SERVICE_PORT}")
 @ApplicationScoped
 public class SysoutChangeEventHandler {
 
