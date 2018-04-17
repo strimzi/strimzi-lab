@@ -256,7 +256,13 @@ oc scale --replicas=1 dc/debezium-connect
 
 Finally, let's explore how to consume the Debezium events in a custom application and forward them to a web UI using WebSockets.
 
-Deploy the application:
+The example application for that is based on http://wildfly-swarm.io/[WildFly Swarm],
+which provides an alternative approach for packaging and running Java EE applications.
+Instead of deploying to an application server, WildFly Swarm creates a self-contained executable JAR
+which contains your application and just those parts of the Java EE platform which it requires.
+
+The application sources are provided at the lab's https://github.com/strimzi/strimzi-lab/tree/master/debezium-swarm-demo[GitHub repo].
+Again we're using an S2I process for building and deploying the application:
 
 [source]
 ----
@@ -266,31 +272,31 @@ oc new-app --name=websocketsinkapp fabric8/s2i-java:latest~https://github.com/st
     -e AB_PROMETHEUS_OFF=true \
     -e KAFKA_SERVICE_HOST=broker-kafka \
     -e KAFKA_SERVICE_PORT=9092
+----
+
+In this case we're using the https://hub.docker.com/r/fabric8/s2i-java/[Java S2I image] provided by the fabric8 project.
+(Note there's commercial support available for running WildFly Swarm applications on OpenShift in form of the https://developers.redhat.com/products/rhoar/overview/[RHOAR product]).
+
+We still need to expose port 8080 for the application and set up a route for it
+(as that's not done automatically by the S2I builder image).
+To do so, use `oc patch` and expose a route for the service like so:
+
+[source]
+----
+oc patch service websocketsinkapp -p '{ "spec" : { "ports" : [{ "name" : "8080-tcp", "port" : 8080, "protocol" : "TCP", "targetPort" : 8080 }] } } }'
 
 oc expose svc websocketsinkapp
 ----
 
-One more more must be exposed for the application.
-In the OpenShift web console, go to "Applications" -> "Services" -> "websocketsinkapp" -> "Actions" -> "Edit YAML".
-Under "spec/ports", add an entry similar to the existing ones for port 8080:
+To consume the Debezium CDC events from the Kafka topic,
+the application uses a https://github.com/aerogear/kafka-cdi[kafka-cdi], a CDI portable extension provided by the AeroGear project.
+This happens in the `WebSocketChangeEventHandler` class.
+All it then needs to do is to push all incoming events via WebSockets to all connected clients.
+For that purpose, the `ChangeEventsWebsocketEndpoint` class registers all clients with the event handler upon connection creation.
 
-[source]
-----
-- name: 8080-tcp
-  port: 8080
-  protocol: TCP
-  targetPort: 8080
-----
-
-Hit "Save".
-
-Then edit the associated route to expose this new port:
-go to "Applications" -> "Routes" -> "websocketsinkapp" -> "Edit".
-Change the target port to 8080 and hit "Save".
-
-Visit the application in a new browser window:
+Once deployed, visit the application in a new browser window:
 
 [source]
 http://websocketsinkapp-default.<YOUR_IP>.xip.io/
 
-Modify some entries in the CRUD application and observe how the change events are progated to the other browser window via WebSockets in near-realtime.
+Modify some entries in the CRUD application and observe how the change events are propagated to the other browser window via WebSockets in near-realtime.
