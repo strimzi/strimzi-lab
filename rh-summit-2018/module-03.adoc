@@ -23,7 +23,7 @@ oc new-app --name=mysql debezium/example-mysql:0.7
 oc env dc/mysql MYSQL_ROOT_PASSWORD=debezium MYSQL_USER=mysqluser MYSQL_PASSWORD=mysqlpw
 
 Then build and start the application.
-This uses the WildFly s2i ("source to image") builder image which will fetch the application's source code from the given location,
+This uses the https://github.com/openshift-s2i/s2i-wildfly[WildFly S2I] ("source to image") builder image which will fetch the application's source code from the given location,
 build it using Maven and deploy it to WildFly, setting up a MySQL datasource using the given credentials:
 
 [source]
