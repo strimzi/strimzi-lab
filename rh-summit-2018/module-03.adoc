@@ -43,7 +43,7 @@ oc get pods
 Access the application in your web browser:
 
 [source]
-http://hikingapp-default.<YOUR_IP>.xip.io//hikr-1.0-SNAPSHOT/hikes.html
+http://hikingapp-default.<YOUR_IP>.xip.io/hikr-1.0-SNAPSHOT/hikes.html
 
 You can use "Populate Data" to create some example data.
 Otherwise just insert a few records as you like.
@@ -74,6 +74,10 @@ mkdir -p plugins && cd plugins && \
 for PLUGIN in {mongodb,mysql,postgres}; do \
     curl http://central.maven.org/maven2/io/debezium/debezium-connector-$PLUGIN/$DEBEZIUM_VERSION/debezium-connector-$PLUGIN-$DEBEZIUM_VERSION-plugin.tar.gz | tar xz; \
 done && \
+mkdir confluent-jdbc-sink && cd confluent-jdbc-sink && \
+curl -O http://central.maven.org/maven2/org/postgresql/postgresql/42.2.2/postgresql-42.2.2.jar && \
+curl -O http://packages.confluent.io/maven/io/confluent/kafka-connect-jdbc/3.3.0/kafka-connect-jdbc-3.3.0.jar && \
+cd .. && \
 oc start-build debezium-connect --from-dir=. --follow && \
 cd .. && rm -rf plugins
 ----
@@ -82,7 +86,7 @@ Register an instance of the Debezium MySQL connector:
 
 [source]
 ----
-oc exec -i broker-kafka-0 -- curl -X POST \
+oc exec -i broker-kafka-0 -- curl -s -X POST \
     -H "Accept:application/json" \
     -H "Content-Type:application/json" \
     http://debezium-connect:8083/connectors -d @- <<'EOF'
@@ -106,6 +110,9 @@ oc exec -i broker-kafka-0 -- curl -X POST \
 EOF
 ----
 
+This sets up an instance of Debezium's `io.debezium.connector.mysql.MySqlConnector` class,
+using the given credentials.
+
 Kafka Connect’s log file should contain messages regarding execution of initial snapshot:
 
 [source]
@@ -124,9 +131,126 @@ oc exec -it broker-kafka-0 -- /opt/kafka/bin/kafka-console-consumer.sh \
    --topic dbserver1.inventory.Hike
 ----
 
+Using the Kafka Connect REST API, aou also can query the list of connectors, query the status of a given connector, delete a connector and more:
+
+[source]
+----
+# List all connectors
+oc exec -i broker-kafka-0 -- curl -s -X GET \
+    -H "Accept:application/json" \
+    -H "Content-Type:application/json" \
+    http://debezium-connect:8083/connectors
+----
+
+[source]
+----
+# Get status of "inventory-connector"
+oc exec -i broker-kafka-0 -- curl -s -X GET \
+    -H "Accept:application/json" \
+    -H "Content-Type:application/json" \
+    http://debezium-connect:8083/connectors/inventory-connector/status
+----
+
+[source]
+----
+# Delete "inventory-connector"
+oc exec -i broker-kafka-0 -- curl -s -X DELETE \
+    -H "Accept:application/json" \
+    -H "Content-Type:application/json" \
+    http://debezium-connect:8083/connectors/inventory-connector
+----
+
 === Streaming Data Changes to a Postgres Sink Database
 
-TODO
+After seeing the change events in the Kafka console, it's time to go a bit further.
+Let's set up another database (Postgres in this case) and stream the data changes there.
+
+[source]
+----
+oc new-app \
+    -e POSTGRESQL_USER=postgresuser \
+    -e POSTGRESQL_PASSWORD=postgrespw \
+    -e POSTGRESQL_DATABASE=inventory \
+    centos/postgresql-95-centos7
+----
+
+Once the database has started, register an instance of the Confluent JDBC sink connector:
+
+[source]
+----
+oc exec -i broker-kafka-0 -- curl -X POST \
+    -H "Accept:application/json" \
+    -H "Content-Type:application/json" \
+    http://debezium-connect:8083/connectors -d @- <<'EOF'
+{
+    "name": "jdbc-sink",
+    "config": {
+        "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
+        "tasks.max": "1",
+        "topics": "dbserver1.inventory.Hike",
+        "connection.url": "jdbc:postgresql://postgresql-95-centos7:5432/inventory?user=postgresuser&password=postgrespw",
+        "transforms": "unwrap",
+        "transforms.unwrap.type": "io.debezium.transforms.UnwrapFromEnvelope",
+        "auto.create": "true",
+        "insert.mode": "upsert",
+        "pk.fields": "id",
+        "pk.mode": "record_value"
+    }
+}
+EOF
+----
+
+This sets up an an instance of `io.confluent.connect.jdbc.JdbcSinkConnector`,
+listening to the `dbserver1.inventory.Hike` and streaming all data changes to the given database connection.
+As this sink connector just expects the effective state of changed rows
+(i.e. the "after" part from the Debezium data change messages),
+only this part is extracted using Debezium's `UnwrapFromEnvelope` SMT (single message transform).
+
+With the sink connector being set up, we can take a look into the Postgres database and see how the table changes are propgated there.
+Get a shell on the pod of the Postgres service:
+
+[source]
+----
+oc rsh $(oc get pods -o name -l app=postgresql-95-centos7)
+----
+
+Run a query to get all records from the table corresponding to the monitored topic:
+
+[source]
+----
+psql -U postgresuser inventory -c 'select * from "dbserver1.inventory.Hike"'
+----
+
+As you alter records in the source web application,
+you'll see how the table in Postgres gets updated accordingly, if you re-execute the query.
+Note that `DELETE` operations currently cannot be propagated, as they are not yet supported by the Confluent JDBC sink connector.
+
+To leave the shell on the Postgres pod, run:
+
+[source]
+----
+exit
+----
+
+As an experiment, you also can explore how the streaming approach ensures a loose coupling of the involved components.
+Scale down the pods of the "strimzi-connect-s2i" application to 0:
+
+[source]
+----
+oc scale --replicas=0 dc/debezium-connect
+----
+
+You'll still be able to edit records in the source application,
+but as Kafka Connect - and with it Debezium - isn't running,
+the changes won't be propagated to the sink database.
+
+Once Kafka Connect is restarted again, the connector will automatically pick up where it left before and after a while,
+you'll see all changes that had occurred in the connector's downtime in the sink database:
+
+[source]
+----
+oc scale --replicas=1 dc/debezium-connect
+----
 
 === Consuming Data Change Events With WildFly Swarm
 
