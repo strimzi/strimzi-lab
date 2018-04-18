@@ -139,83 +139,57 @@ Let's see what it contains.
 
 [source,sh]
 ---------
-$ oc describe configmaps/my-cluster
-Name:		my-cluster
-Namespace:	l1099-kafka
-Labels:		app=strimzi-ephemeral
-		strimzi.io/kind=cluster
-		strimzi.io/type=kafka
-Annotations:	openshift.io/generated-by=OpenShiftNewApp
-
-Data
-====
-kafka-healthcheck-timeout:
-----
-5
-kafka-image:
-----
-strimzi/kafka:0.2.0
-KAFKA_DEFAULT_REPLICATION_FACTOR:
-----
-1
-zookeeper-healthcheck-delay:
-----
-15
-zookeeper-storage:
-----
-{ "type": "ephemeral" }
-topic-controller-config:
-----
-{ }
-kafka-nodes:
-----
-3
-zookeeper-healthcheck-timeout:
-----
-5
-zookeeper-metrics-config:
-----
-{
-  "lowercaseOutputName": true
-}
-kafka-metrics-config:
-----
-{
-  "lowercaseOutputName": true,
-  "rules": [
-      {
-        "pattern": "kafka.server<type=(.+), name=(.+)PerSec\\w*><>Count",
-        "name": "kafka_server_$1_$2_total"
-      },
-      {
-        "pattern": "kafka.server<type=(.+), name=(.+)PerSec\\w*, topic=(.+)><>Count",
-        "name": "kafka_server_$1_$2_total",
-        "labels":
-        {
-          "topic": "$3"
-        }
-      }
-  ]
-}
-KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR:
-----
-3
-kafka-healthcheck-delay:
-----
-15
-kafka-storage:
-----
-{ "type": "ephemeral" }
-zookeeper-image:
-----
-strimzi/zookeeper:0.2.0
-zookeeper-nodes:
-----
-1
-KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR:
-----
-3
-Events:	<none>
+$ oc get cm my-cluster -o yaml
+apiVersion: v1
+data:
+  KAFKA_DEFAULT_REPLICATION_FACTOR: "1"
+  KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "3"
+  KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "3"
+  kafka-healthcheck-delay: "15"
+  kafka-healthcheck-timeout: "5"
+  kafka-image: strimzi/kafka:0.2.0
+  kafka-metrics-config: |-
+    {
+      "lowercaseOutputName": true,
+      "rules": [
+          {
+            "pattern": "kafka.server<type=(.+), name=(.+)PerSec\\w*><>Count",
+            "name": "kafka_server_$1_$2_total"
+          },
+          {
+            "pattern": "kafka.server<type=(.+), name=(.+)PerSec\\w*, topic=(.+)><>Count",
+            "name": "kafka_server_$1_$2_total",
+            "labels":
+            {
+              "topic": "$3"
+            }
+          }
+      ]
+    }
+  kafka-nodes: "3"
+  kafka-storage: '{ "type": "ephemeral" }'
+  topic-controller-config: '{ }'
+  zookeeper-healthcheck-delay: "15"
+  zookeeper-healthcheck-timeout: "5"
+  zookeeper-image: strimzi/zookeeper::0.2.0
+  zookeeper-metrics-config: |-
+    {
+      "lowercaseOutputName": true
+    }
+  zookeeper-nodes: "1"
+  zookeeper-storage: '{ "type": "ephemeral" }'
+kind: ConfigMap
+metadata:
+  creationTimestamp: 2018-04-18T08:06:50Z
+  labels:
+    app: strimzi-ephemeral
+    strimzi.io/kind: cluster
+    strimzi.io/type: kafka
+  name: my-cluster
+  namespace: myproject
+  resourceVersion: "1837"
+  selfLink: /api/v1/namespaces/myproject/configmaps/my-cluster
+  uid: 72f8e336-42df-11e8-9953-54ee758f9350
 ---------
 
 The properties of the map control the cluster configuration.
