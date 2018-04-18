@@ -1,7 +1,7 @@
 == Deploying an Apache Kafka cluster with Strimzi
 
-Let's get started by deploying an Apache Kafka on OpenShift.
-For this, we will use Strimzi, an open-source project that simplifies the process of deploying and managing Apache Kafka clusters on Kubernetes and OpenShift.
+Let's get started by deploying an Apache Kafka cluster on OpenShift.
+For this, we will use http://strimzi.io/[Strimzi], an open-source project that simplifies the process of deploying and managing Apache Kafka clusters on Kubernetes and OpenShift.
 
 === How Strimzi works
 
@@ -14,13 +14,12 @@ These tasks typically require direct access to the cluster nodes and can easily 
 Strimzi simplifies these tasks by using a declarative approach to cluster and topic management, based on the controller pattern.
 Instead of relying on direct deployment and management of clusters, Strimzi consists of a couple of controllers that monitor the state of the cluster, making adjustments in accordance to a desired state read from dedicated ConfigMaps.
 
-For creating an Apache Kafka cluster, for instance, you need to create a ConfigMap that describes the properties of the cluster, and the _cluster controller_ will deploy the cluster for you.
+For creating an Apache Kafka cluster, for instance, you need to create a ConfigMap that describes the properties of the cluster, and the *_cluster controller_* will deploy the cluster for you.
 If you need to change the state of the cluster, for example for changing properties or for adding new instances, all you have to do is to modify the ConfigMap and the changes will be rolled out accordingly.
 
-Topic management works in a similar fashion: for creating and modifying topics, you only need to create and edit a set of ConfigMaps and the `topic controller` will do the work for you.
+Topic management works in a similar fashion: for creating and modifying topics, you only need to create and edit a set of ConfigMaps and the *_topic controller_* will do the work for you.
 
 You will do all this as part of the first lab.
-
 
 === Installing Strimzi
 
@@ -83,7 +82,7 @@ NAME                                          READY     STATUS    RESTARTS   AGE
 strimzi-cluster-controller-2044197322-lzrvr   1/1       Running   0          3m
 
 Next, install the Strimzi templates.
-The templates contain predefined config maps for easily deploying clusters and topics.
+The templates contain predefined config maps for easily deploying clusters (for Kafka Connect as well).
 
 [source, sh]
 $ oc create -f examples/templates/cluster-controller
@@ -140,88 +139,62 @@ Let's see what it contains.
 
 [source,sh]
 ---------
-$ oc describe configmaps/my-cluster
-Name:		my-cluster
-Namespace:	l1099-kafka
-Labels:		app=strimzi-ephemeral
-		strimzi.io/kind=cluster
-		strimzi.io/type=kafka
-Annotations:	openshift.io/generated-by=OpenShiftNewApp
-
-Data
-====
-kafka-healthcheck-timeout:
-----
-5
-kafka-image:
-----
-strimzi/kafka:0.2.0
-KAFKA_DEFAULT_REPLICATION_FACTOR:
-----
-1
-zookeeper-healthcheck-delay:
-----
-15
-zookeeper-storage:
-----
-{ "type": "ephemeral" }
-topic-controller-config:
-----
-{ }
-kafka-nodes:
-----
-3
-zookeeper-healthcheck-timeout:
-----
-5
-zookeeper-metrics-config:
-----
-{
-  "lowercaseOutputName": true
-}
-kafka-metrics-config:
-----
-{
-  "lowercaseOutputName": true,
-  "rules": [
-      {
-        "pattern": "kafka.server<type=(.+), name=(.+)PerSec\\w*><>Count",
-        "name": "kafka_server_$1_$2_total"
-      },
-      {
-        "pattern": "kafka.server<type=(.+), name=(.+)PerSec\\w*, topic=(.+)><>Count",
-        "name": "kafka_server_$1_$2_total",
-        "labels":
-        {
-          "topic": "$3"
-        }
-      }
-  ]
-}
-KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR:
-----
-3
-kafka-healthcheck-delay:
-----
-15
-kafka-storage:
-----
-{ "type": "ephemeral" }
-zookeeper-image:
-----
-strimzi/zookeeper:0.2.0
-zookeeper-nodes:
-----
-1
-KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR:
-----
-3
-Events:	<none>
+$ oc get cm my-cluster -o yaml
+apiVersion: v1
+data:
+  KAFKA_DEFAULT_REPLICATION_FACTOR: "1"
+  KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "3"
+  KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "3"
+  kafka-healthcheck-delay: "15"
+  kafka-healthcheck-timeout: "5"
+  kafka-image: strimzi/kafka:0.2.0
+  kafka-metrics-config: |-
+    {
+      "lowercaseOutputName": true,
+      "rules": [
+          {
+            "pattern": "kafka.server<type=(.+), name=(.+)PerSec\\w*><>Count",
+            "name": "kafka_server_$1_$2_total"
+          },
+          {
+            "pattern": "kafka.server<type=(.+), name=(.+)PerSec\\w*, topic=(.+)><>Count",
+            "name": "kafka_server_$1_$2_total",
+            "labels":
+            {
+              "topic": "$3"
+            }
+          }
+      ]
+    }
+  kafka-nodes: "3"
+  kafka-storage: '{ "type": "ephemeral" }'
+  topic-controller-config: '{ }'
+  zookeeper-healthcheck-delay: "15"
+  zookeeper-healthcheck-timeout: "5"
+  zookeeper-image: strimzi/zookeeper::0.2.0
+  zookeeper-metrics-config: |-
+    {
+      "lowercaseOutputName": true
+    }
+  zookeeper-nodes: "1"
+  zookeeper-storage: '{ "type": "ephemeral" }'
+kind: ConfigMap
+metadata:
+  creationTimestamp: 2018-04-18T08:06:50Z
+  labels:
+    app: strimzi-ephemeral
+    strimzi.io/kind: cluster
+    strimzi.io/type: kafka
+  name: my-cluster
+  namespace: myproject
+  resourceVersion: "1837"
+  selfLink: /api/v1/namespaces/myproject/configmaps/my-cluster
+  uid: 72f8e336-42df-11e8-9953-54ee758f9350
 ---------
 
 The properties of the map control the cluster configuration.
 Notice the `kafka-nodes` and `zookeeper-nodes` properties, with values of 3 and 1, respectively.
-This deployment has one Zookeper node and three Kafka brokers.
+This deployment has one Zookeeper node and three Kafka brokers.
 
 Visualize the running pods:
 
@@ -243,7 +216,7 @@ strimzi-cluster-controller-2044197322-lzrvr    1/1       Running   0          11
 In addition to the `cluster controler` created previously, notice a few more deployments:
 
 * the `topic controller` is now deployed as well - you can deploy it independently, but the Strimzi template deploys it out of the box;
-* one Zookeper node
+* one Zookeeper node
 * three Kafka brokers
 
 Also, notice that the Zookeeper ensemble and the Kafka cluster are deployed as stateful sets.
