@@ -6,7 +6,7 @@ It consists of:
 * an OpenShift cluster with one master node and three worker nodes;
 * a workstation;
 
-During the lab you will interact with the OpenShift cluster via CLI from the workstation and from the browser available on your station.
+During the lab you will interact with the OpenShift cluster via CLI from the workstation and with the OpenShift web console from the browser available on your station.
 Make note of the URLs that you will use during the lab.
 
 |===
