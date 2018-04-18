@@ -139,6 +139,7 @@ The key resource is the `my-cluster` config map.
 Let's see what it contains.
 
 [source,sh]
+---------
 $ oc describe configmaps/my-cluster
 Name:		my-cluster
 Namespace:	l1099-kafka
@@ -216,6 +217,7 @@ KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR:
 ----
 3
 Events:	<none>
+---------
 
 The properties of the map control the cluster configuration.
 Notice the `kafka-nodes` and `zookeeper-nodes` properties, with values of 3 and 1, respectively.
