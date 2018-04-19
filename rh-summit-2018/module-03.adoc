@@ -50,24 +50,24 @@ Otherwise just insert a few records as you like.
 
 === Setting Up Kafka Connect With the Debezium Connectors
 
-Deploy Kafka via Strimzi (TODO: should already be done as part of module 1):
+Now it's time to deploy https://kafka.apache.org/documentation/#connect[Kafka Connect] and Debezium.
+Kafka Connect is a platform for streaming data between Apache Kafka and other systems.
+It provides a framework and runtime environment for _source connectors_ (for getting data into Kafka)
+and _sink connectors_ (for getting data out of Kafka).
+Debezium provides a set of CDC source connectors for databases such as MySQL, Postgres and MongoDB.
+
+Let's begin by setting up a Kafka Connect cluster,
+using the S2I process provided by Strimzi.
+This makes it very easy to create a Kafka Connect cluster with additional connectors such as the ones provided by Debezium:
 
 [source]
 ----
-export STRIMZI_VERSION=0.2.0
-git clone -b $STRIMZI_VERSION https://github.com/strimzi/strimzi
-cd strimzi
-
-oc create -f examples/install/cluster-controller && oc create -f examples/templates/cluster-controller
-
-oc new-app strimzi-ephemeral -p CLUSTER_NAME=broker -p ZOOKEEPER_NODE_COUNT=1 -p KAFKA_NODE_COUNT=1 -p KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1 -p KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
-----
-
-Deploy Kafka Connect With Debezium:
-
-[source]
-----
-oc new-app strimzi-connect-s2i -p CLUSTER_NAME=debezium -p KAFKA_CONNECT_BOOTSTRAP_SERVERS=broker-kafka:9092 -p KAFKA_CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR=1 -p KAFKA_CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR=1 -p KAFKA_CONNECT_STATUS_STORAGE_REPLICATION_FACTOR=1
+oc new-app strimzi-connect-s2i \
+    -p CLUSTER_NAME=debezium \
+    -p KAFKA_CONNECT_BOOTSTRAP_SERVERS=my-cluster-kafka:9092 \
+    -p KAFKA_CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR=1 \
+    -p KAFKA_CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR=1 \
+    -p KAFKA_CONNECT_STATUS_STORAGE_REPLICATION_FACTOR=1
 
 export DEBEZIUM_VERSION=0.7.5
 mkdir -p plugins && cd plugins && \
@@ -86,7 +86,7 @@ Register an instance of the Debezium MySQL connector:
 
 [source]
 ----
-oc exec -i broker-kafka-0 -- curl -s -X POST \
+oc exec -i my-cluster-kafka-0 -- curl -s -X POST \
     -H "Accept:application/json" \
     -H "Content-Type:application/json" \
     http://debezium-connect:8083/connectors -d @- <<'EOF'
@@ -103,7 +103,7 @@ oc exec -i broker-kafka-0 -- curl -s -X POST \
         "database.server.id": "184054",
         "database.server.name": "dbserver1",
         "database.whitelist": "inventory",
-        "database.history.kafka.bootstrap.servers": "broker-kafka:9092",
+        "database.history.kafka.bootstrap.servers": "my-cluster-kafka:9092",
         "database.history.kafka.topic": "schema-changes.inventory"
     }
 }
@@ -124,7 +124,7 @@ Examine CDC messages in Kafka (add/alter records in the web app and see how mess
 
 [source]
 ----
-oc exec -it broker-kafka-0 -- /opt/kafka/bin/kafka-console-consumer.sh \
+oc exec -it my-cluster-kafka-0 -- /opt/kafka/bin/kafka-console-consumer.sh \
    --bootstrap-server localhost:9092 \
    --from-beginning \
    --property print.key=true \
@@ -136,7 +136,7 @@ Using the Kafka Connect REST API, aou also can query the list of connectors, que
 [source]
 ----
 # List all connectors
-oc exec -i broker-kafka-0 -- curl -s -X GET \
+oc exec -i my-cluster-kafka-0 -- curl -s -X GET \
     -H "Accept:application/json" \
     -H "Content-Type:application/json" \
     http://debezium-connect:8083/connectors
@@ -145,7 +145,7 @@ oc exec -i broker-kafka-0 -- curl -s -X GET \
 [source]
 ----
 # Get status of "inventory-connector"
-oc exec -i broker-kafka-0 -- curl -s -X GET \
+oc exec -i my-cluster-kafka-0 -- curl -s -X GET \
     -H "Accept:application/json" \
     -H "Content-Type:application/json" \
     http://debezium-connect:8083/connectors/inventory-connector/status
@@ -154,7 +154,7 @@ oc exec -i broker-kafka-0 -- curl -s -X GET \
 [source]
 ----
 # Delete "inventory-connector"
-oc exec -i broker-kafka-0 -- curl -s -X DELETE \
+oc exec -i my-cluster-kafka-0 -- curl -s -X DELETE \
     -H "Accept:application/json" \
     -H "Content-Type:application/json" \
     http://debezium-connect:8083/connectors/inventory-connector
@@ -178,7 +178,7 @@ Once the database has started, register an instance of the Confluent JDBC sink c
 
 [source]
 ----
-oc exec -i broker-kafka-0 -- curl -X POST \
+oc exec -i my-cluster-kafka-0 -- curl -X POST \
     -H "Accept:application/json" \
     -H "Content-Type:application/json" \
     http://debezium-connect:8083/connectors -d @- <<'EOF'
@@ -270,7 +270,7 @@ oc new-app --name=websocketsinkapp fabric8/s2i-java:latest~https://github.com/st
     --context-dir=debezium-swarm-demo \
     -e MYSQL_DATABASE=inventory \
     -e AB_PROMETHEUS_OFF=true \
-    -e KAFKA_SERVICE_HOST=broker-kafka \
+    -e KAFKA_SERVICE_HOST=my-cluster-kafka \
     -e KAFKA_SERVICE_PORT=9092
 ----
 
