@@ -1,5 +1,13 @@
 == Running IoT demo with Kafka Streams API
 
+The IoT demo is made by different components with the following architecture :
+
+image::iot-demo.png[iot-demo]
+
+* one or more device simulators which sends temperature values to the `iot-temperature` topic;
+* a stream application which uses Kafka Streams API in order to get data from the `iot-temperature` topic and process them to compute the maximum value (for each device) in the last 5 seconds; it writes the results to the `iot-temperature-max` topic;
+* a consumer application which reads messages from the `iot-temperature-max` topic and provides a Web UI for showing them;
+
 === Create topics
 
 This demo uses a couple of topics. The first one named `iot-temperature` is used by the device simulator for sending 
