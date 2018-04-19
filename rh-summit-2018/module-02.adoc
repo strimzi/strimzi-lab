@@ -10,21 +10,18 @@ image::iot-demo.png[iot-demo]
 
 === Create topics
 
-This demo uses a couple of topics. The first one named `iot-temperature` is used by the device simulator for sending 
-temperature values and by the stream application for getting such values and processing them. The second one is the 
-`iot-temperature-max` topic where the stream application puts the max temperature value processed in the specified time 
-window.
-In order to create these topics in the Kafka cluster, the Topic Controller can be used. Running the following command, a 
-file containing two topic ConfigMaps is deployed to the OpenShift cluster and used by the Topic Controller for creating 
-such topics.
+This demo uses a couple of topics.
+The first one named `iot-temperature` is used by the device simulator for sending temperature values and by the stream application for getting such values and processing them.
+The second one is the `iot-temperature-max` topic where the stream application puts the max temperature value processed in the specified time window.
+In order to create these topics in the Kafka cluster, the Topic Controller can be used.
+Running the following command, a file containing two topic ConfigMaps is deployed to the OpenShift cluster and used by the Topic Controller for creating such topics.
 
 [source]
 oc create -f https://raw.githubusercontent.com/strimzi/strimzi-lab/master/iot-demo/stream-app/resources/topics.yml
 
 image::topics.png[topics]
 
-In order to check that the topics are properly created on the Kafka cluster, it's possible to use the `kafka-topics.sh` script 
-(distributed with Kafka) running it on one of the broker.
+In order to check that the topics are properly created on the Kafka cluster, it's possible to use the `kafka-topics.sh` script (distributed with Kafka) running it on one of the broker.
 
 [source]
 oc exec -it my-cluster-kafka-0 -- bin/kafka-topics.sh --zookeeper my-cluster-zookeeper:2181 --list
@@ -37,8 +34,7 @@ iot-temperature-max
 
 === Deploy the consumer application
 
-The consumer application uses Kafka client in order to get messages from the `iot-temperature-max` topic and showing them 
-in a Web UI.
+The consumer application uses Kafka client in order to get messages from the `iot-temperature-max` topic and showing them in a Web UI.
 It's deployed running following command :
 
 [source]
@@ -52,16 +48,14 @@ image::route.png[route]
 
 image::web_ui.png[web ui]
 
-It's also possible to avoid running the consumer Web UI application and instead running a Kafka console consumer on one 
-of the Pods of the deployed Kafka cluster.
+It's also possible to avoid running the consumer Web UI application and instead running a Kafka console consumer on one of the Pods of the deployed Kafka cluster.
 
 [source]
 oc exec -it my-cluster-kafka-0 -- bin/kafka-console-consumer.sh --bootstrap-server my-cluster-kafka:9092 --topic iot-temperature-max --from-beginning
 
 === Deploy the stream application
 
-The stream application uses Kafka Streams API reading from the `iot-temperature` topic, processing its values and then 
-putting the max temperature value in the specified time window into the `iot-temperature-max` topic.
+The stream application uses Kafka Streams API reading from the `iot-temperature` topic, processing its values and then putting the max temperature value in the specified time window into the `iot-temperature-max` topic.
 It's deployed running following command :
 
 [source]
@@ -78,13 +72,11 @@ Once deployed, it starts just one pod simulating one device.
 
 image::one_device_gauge.png[one device gauge]
 
-it's possible to scale up the number of pods in order to simulate more devices sending temperature values (each one with 
-a different and randomly generated id).
+it's possible to scale up the number of pods in order to simulate more devices sending temperature values (each one with a different and randomly generated id).
 
 image::scale_up_device.png[scale up device]
 
-Opening the consumer Web UI it's possible to see the "gauges" charts showing the processed max temperature values for all the 
-active devices on the left side. The right side is useful to see the log of the incoming messages from devices, showing the 
-device id alongside the max temperature value processed by the stream application for such a device.
+Opening the consumer Web UI it's possible to see the "gauges" charts showing the processed max temperature values for all the active devices on the left side.
+The right side is useful to see the log of the incoming messages from devices, showing the device id alongside the max temperature value processed by the stream application for such a device.
 
 image::more_device_gauges.png[more device gauges]
