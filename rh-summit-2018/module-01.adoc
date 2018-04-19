@@ -213,7 +213,7 @@ my-cluster-topic-controller-1422164134-f9n8r   1/1       Running   0          1m
 my-cluster-zookeeper-0                         1/1       Running   0          3m
 strimzi-cluster-controller-2044197322-lzrvr    1/1       Running   0          11m
 
-In addition to the `cluster controler` created previously, notice a few more deployments:
+In addition to the `cluster controller` created previously, notice a few more deployments:
 
 * the `topic controller` is now deployed as well - you can deploy it independently, but the Strimzi template deploys it out of the box;
 * one Zookeeper node
