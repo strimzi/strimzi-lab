@@ -250,6 +250,14 @@ To deploy Grafana on OpenShift, the following commands should be executed:
 [source,sh]
 oc create -f https://raw.githubusercontent.com/strimzi/strimzi/master/metrics/examples/grafana/kubernetes.yaml
 
+For accessing the dashboard, you can use the `port-forward` command for forwarding traffic from the Grafana pod to the host.
+For example, you can access the Grafana UI by running :
+
+[source,sh]
+oc port-forward grafana-1-fbl7s 3000:3000
+
+providing the right Grafana pod name (something like grafana-xxxxx) and then pointing the browser to `http://localhost:3000`.
+
 In order to visualize the exported metrics in Grafana, the simple dashboard `kafka-dashboard.json`` file is provided.
 The Prometheus data source, and the above dashboard, can be set up in Grafana by following these steps.
 
