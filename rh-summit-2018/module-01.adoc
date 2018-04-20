@@ -221,5 +221,60 @@ In addition to the `cluster controler` created previously, notice a few more dep
 
 Also, notice that the Zookeeper ensemble and the Kafka cluster are deployed as stateful sets.
 
+=== Monitoring with Prometheus and Grafana
+
+By default, Strimzi provides the Kafka brokers and the Zookeeper nodes with a Prometheus JMX exporter agent which is running in order to export metrics.
+These metrics can be read and processed by a Prometheus server in order to monitoring the cluster.
+For building a graphical dashboard with such information, it's possible to use Grafana.
+
+==== Prometheus
+
+The Prometheus service pod runs with `prometheus-server` service account and it needs to have access to the API server to get the pod list and for allowing that, the following command is needed.
+
+[source,sh]
+export NAMESPACE=l1099-kafka
+oc create sa prometheus-server
+oc adm policy add-cluster-role-to-user cluster-reader system:serviceaccount:${NAMESPACE}:prometheus-server
+
+Finally, create the Prometheus service by running.
+
+[source,sh]
+oc create -f https://raw.githubusercontent.com/strimzi/strimzi/master/metrics/examples/prometheus/kubernetes.yaml
+
+==== Grafana
+
+The Grafana server is really useful to get a visualisation of the Prometheus metrics.
+
+To deploy Grafana on OpenShift, the following commands should be executed:
+
+[source,sh]
+oc create -f https://raw.githubusercontent.com/strimzi/strimzi/master/metrics/examples/grafana/kubernetes.yaml
+
+In order to visualize the exported metrics in Grafana, the simple dashboard `kafka-dashboard.json`` file is provided.
+The Prometheus data source, and the above dashboard, can be set up in Grafana by following these steps.
+
+Access to the Grafana UI using `admin/admin` credentials.
+
+image::grafana_login.png[grafana login]
+
+Click on the "Add data source" button from the Grafana home in order to add Prometheus as data source.
+
+image::grafana_home.png[grafana home]
+
+Fill in the information about the Prometheus data source, specifying a name and "Prometheus" as type.
+In the URL field, the connection string to the Prometheus server `http://prometheus:9090`` should be specified.
+After "Add" is clicked, Grafana will test the connection to the data source.
+
+image::grafana_prometheus_data_source.png[grafana prometheus data source]
+
+From the top left menu, click on "Dashboards" and then "Import" to open the "Import Dashboard" window where the provided `kafka-dashboard.json`` file can be imported or its content pasted.
+
+image::grafana_import_dashboard.png[grafana import dashboard]
+
+After importing the dashboard, the Grafana home should show with some initial metrics about CPU and JVM memory usage.
+When the Kafka cluster is used (creating topics and exchanging messages) the other metrics, like messages in and bytes in/out per topic, will be shown.
+
+image::grafana_kafka_dashboard.png[grafana kafka dashboard]
+
 Now your Kafka cluster is running and ready to go.
 Let's build some applications!
