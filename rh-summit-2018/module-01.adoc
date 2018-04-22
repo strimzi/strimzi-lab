@@ -232,14 +232,14 @@ For building a graphical dashboard with such information, it's possible to use G
 The Prometheus service pod runs with `prometheus-server` service account and it needs to have access to the API server to get the pod list and for allowing that, the following command is needed.
 
 [source,sh]
-export NAMESPACE=l1099-kafka
-oc create sa prometheus-server
-oc adm policy add-cluster-role-to-user cluster-reader system:serviceaccount:${NAMESPACE}:prometheus-server
+$ export NAMESPACE=l1099-kafka
+$ oc create sa prometheus-server
+$ oc adm policy add-cluster-role-to-user cluster-reader system:serviceaccount:${NAMESPACE}:prometheus-server
 
 Finally, create the Prometheus service by running.
 
 [source,sh]
-oc create -f https://raw.githubusercontent.com/strimzi/strimzi/master/metrics/examples/prometheus/kubernetes.yaml
+$ oc create -f https://raw.githubusercontent.com/strimzi/strimzi/master/metrics/examples/prometheus/kubernetes.yaml
 
 ==== Grafana
 
@@ -248,13 +248,13 @@ The Grafana server is really useful to get a visualisation of the Prometheus met
 To deploy Grafana on OpenShift, the following commands should be executed:
 
 [source,sh]
-oc create -f https://raw.githubusercontent.com/strimzi/strimzi/master/metrics/examples/grafana/kubernetes.yaml
+$ oc create -f https://raw.githubusercontent.com/strimzi/strimzi/master/metrics/examples/grafana/kubernetes.yaml
 
 For accessing the dashboard, you can use the `port-forward` command for forwarding traffic from the Grafana pod to the host.
 For example, you can access the Grafana UI by running :
 
 [source,sh]
-oc port-forward grafana-1-fbl7s 3000:3000
+$ oc port-forward grafana-1-fbl7s 3000:3000
 
 providing the right Grafana pod name (something like grafana-xxxxx) and then pointing the browser to `http://localhost:3000`.
 

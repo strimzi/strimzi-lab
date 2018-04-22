@@ -16,19 +16,19 @@ The second one is the `iot-temperature-max` topic where the stream application p
 In order to create these topics in the Kafka cluster, the Topic Controller can be used.
 Running the following command, a file containing two topic ConfigMaps is deployed to the OpenShift cluster and used by the Topic Controller for creating such topics.
 
-[source]
-oc create -f https://raw.githubusercontent.com/strimzi/strimzi-lab/master/iot-demo/stream-app/resources/topics.yml
+[source,sh]
+$ oc create -f https://raw.githubusercontent.com/strimzi/strimzi-lab/master/iot-demo/stream-app/resources/topics.yml
 
 image::topics.png[topics]
 
 In order to check that the topics are properly created on the Kafka cluster, it's possible to use the `kafka-topics.sh` script (distributed with Kafka) running it on one of the broker.
 
-[source]
-oc exec -it my-cluster-kafka-0 -- bin/kafka-topics.sh --zookeeper my-cluster-zookeeper:2181 --list
+[source,sh]
+$ oc exec -it my-cluster-kafka-0 -- bin/kafka-topics.sh --zookeeper my-cluster-zookeeper:2181 --list
 
 The output of the above command should be something like the following showing the created topics.
 
-[source]
+[source,sh]
 iot-temperature
 iot-temperature-max
 
@@ -37,10 +37,10 @@ iot-temperature-max
 The consumer application uses Kafka client in order to get messages from the `iot-temperature-max` topic and showing them in a Web UI.
 It's deployed running following command :
 
-[source]
-oc create -f https://raw.githubusercontent.com/strimzi/strimzi-lab/master/iot-demo/consumer-app/resources/consumer-app.yml
-oc create -f https://raw.githubusercontent.com/strimzi/strimzi-lab/master/iot-demo/consumer-app/resources/consumer-svc.yml
-oc create -f https://raw.githubusercontent.com/strimzi/strimzi-lab/master/iot-demo/consumer-app/resources/consumer-route.yml
+[source,sh]
+$ oc create -f https://raw.githubusercontent.com/strimzi/strimzi-lab/master/iot-demo/consumer-app/resources/consumer-app.yml
+$ oc create -f https://raw.githubusercontent.com/strimzi/strimzi-lab/master/iot-demo/consumer-app/resources/consumer-svc.yml
+$ oc create -f https://raw.githubusercontent.com/strimzi/strimzi-lab/master/iot-demo/consumer-app/resources/consumer-route.yml
 
 A route is provided in order to access the related Web UI.
 
@@ -50,23 +50,23 @@ image::web_ui.png[web ui]
 
 It's also possible to avoid running the consumer Web UI application and instead running a Kafka console consumer on one of the Pods of the deployed Kafka cluster.
 
-[source]
-oc exec -it my-cluster-kafka-0 -- bin/kafka-console-consumer.sh --bootstrap-server my-cluster-kafka:9092 --topic iot-temperature-max --from-beginning
+[source,sh]
+$ oc exec -it my-cluster-kafka-0 -- bin/kafka-console-consumer.sh --bootstrap-server my-cluster-kafka:9092 --topic iot-temperature-max --from-beginning
 
 === Deploy the stream application
 
 The stream application uses Kafka Streams API reading from the `iot-temperature` topic, processing its values and then putting the max temperature value in the specified time window into the `iot-temperature-max` topic.
 It's deployed running following command :
 
-[source]
-oc create -f https://raw.githubusercontent.com/strimzi/strimzi-lab/master/iot-demo/stream-app/resources/stream-app.yml
+[source,sh]
+$ oc create -f https://raw.githubusercontent.com/strimzi/strimzi-lab/master/iot-demo/stream-app/resources/stream-app.yml
 
 === Deploy the device application
 
 The device application provides a device simulator which sends temperature values to the `iot-temperature` topic.
 
-[source]
-oc create -f https://raw.githubusercontent.com/strimzi/strimzi-lab/master/iot-demo/device-app/resources/device-app.yml
+[source,sh]
+$ oc create -f https://raw.githubusercontent.com/strimzi/strimzi-lab/master/iot-demo/device-app/resources/device-app.yml
 
 Once deployed, it starts just one pod simulating one device.
 
