@@ -251,15 +251,12 @@ To deploy Grafana on OpenShift, the following commands should be executed:
 $ oc create -f https://raw.githubusercontent.com/strimzi/strimzi/master/metrics/examples/grafana/kubernetes.yaml
 
 For accessing the dashboard, you can use the `port-forward` command for forwarding traffic from the Grafana pod to the host.
-For example, you can access the Grafana UI by running :
+For example, you can access the Grafana UI after running:
 
 [source,sh]
-$ oc port-forward grafana-1-fbl7s 3000:3000
+$ oc expose svc/grafana
 
-providing the right Grafana pod name (something like grafana-xxxxx) and then pointing the browser to `http://localhost:3000`.
-
-In order to visualize the exported metrics in Grafana, the simple dashboard `kafka-dashboard.json`` file is provided.
-The Prometheus data source, and the above dashboard, can be set up in Grafana by following these steps.
+The Prometheus data source, and the Kafka dashboard, can be set up in Grafana by following these steps.
 
 Access to the Grafana UI using `admin/admin` credentials.
 
@@ -270,12 +267,15 @@ Click on the "Add data source" button from the Grafana home in order to add Prom
 image::grafana_home.png[grafana home]
 
 Fill in the information about the Prometheus data source, specifying a name and "Prometheus" as type.
-In the URL field, the connection string to the Prometheus server `http://prometheus:9090`` should be specified.
+In the URL field, use `http://prometheus.l1099-kafka.svc.cluster.local:9090` as the URL to the Prometheus server.
 After "Add" is clicked, Grafana will test the connection to the data source.
 
 image::grafana_prometheus_data_source.png[grafana prometheus data source]
 
-From the top left menu, click on "Dashboards" and then "Import" to open the "Import Dashboard" window where the provided `kafka-dashboard.json`` file can be imported or its content pasted.
+From the top left menu, click on "Dashboards" and then "Import" to open the "Import Dashboard" window.
+Open a brower tab and navigate to `https://raw.githubusercontent.com/strimzi/strimzi/0.3.0/metrics/examples/grafana/kafka-dashboard.json`.
+You should see JSON content as response.
+Copy and paste it in the appropriate field in the form.
 
 image::grafana_import_dashboard.png[grafana import dashboard]
 
