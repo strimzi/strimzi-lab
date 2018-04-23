@@ -256,7 +256,14 @@ For example, you can access the Grafana UI after running:
 [source,sh]
 $ oc expose svc/grafana
 
-The Prometheus data source, and the Kafka dashboard, can be set up in Grafana by following these steps.
+The hostname of the service is available in the OpenShift console, or can be retrieved via CLI:
+
+[source,sh]
+$ oc get routes grafana -o=jsonpath='{.spec.host}{"\n"}'
+
+Note the output, which should be in the format `grafana-l1099-kafka.<IP-ADDRESS>.xip.io` (the actual IP will vary from environment to environment).
+You will be able to access the Grafana UI at `http://grafana-l1099-kafka.<IP-ADDRESS>.xip.io`
+Now we can set up the Prometheus data source and the Kafka dashboard.
 
 Access to the Grafana UI using `admin/admin` credentials.
 
@@ -267,7 +274,7 @@ Click on the "Add data source" button from the Grafana home in order to add Prom
 image::grafana_home.png[grafana home]
 
 Fill in the information about the Prometheus data source, specifying a name and "Prometheus" as type.
-In the URL field, use `http://prometheus.l1099-kafka.svc.cluster.local:9090` as the URL to the Prometheus server.
+In the URL field, use `http://prometheus:9090` as the URL to the Prometheus server.
 After "Add" is clicked, Grafana will test the connection to the data source.
 
 image::grafana_prometheus_data_source.png[grafana prometheus data source]
