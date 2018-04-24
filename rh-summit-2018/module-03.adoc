@@ -14,8 +14,9 @@ In the following you'll learn the following things:
 
 * Setting up Kafka Connect with the Debezium CDC connectors
 * Setting up the Debezium MySQL connector, ingesting changes from an existing example CRUD application
-* Streaming Data Changes to a Postgres sink database using the Confluent JDBC sink connector
-* Setting up a WildFly Swarm application for consuming the same CDC events and stream them to a web browser via WebSockets
+* Different ways of processing change data events
+** Streaming data changes to a Postgres sink database
+** Programmatically consuming change events using WildFly Swarm and CDI and streaming them to a web browser via WebSockets
 
 === Setting Up the Example Application
 
@@ -379,10 +380,21 @@ oc exec -i my-cluster-kafka-0 -- curl -s -X DELETE \
     http://debezium-connect:8083/connectors/inventory-connector
 ----
 
-=== Streaming Data Changes to a Postgres Sink Database
+=== Processing Change Data Events
 
-After seeing the change events in the Kafka console, it's time to go a bit further.
-Let's set up another database (Postgres in this case) and stream the data changes there.
+Examining change events in the Kafka console is a good first step,
+but eventually we'd like to consume the events in a more meaningful way.
+
+In the following different ways for consuming events are explored.
+You can choose the one you are most interested in or walk through all the alternatives,
+as your preference.
+
+==== Streaming Data Changes to a Postgres Sink Database
+
+To stream data changes into another database, no manual programming effort is needed.
+Instead, the Confluent JDBC sink connector for Kafka Connect can be used to data into a target database.
+
+So let's set up another database (Postgres in this case) and stream the data changes there.
 
 [source]
 ----
@@ -471,7 +483,7 @@ you'll see all changes that had occurred in the connector's downtime in the sink
 oc scale --replicas=1 dc/debezium-connect
 ----
 
-=== Consuming Data Change Events With WildFly Swarm
+==== Consuming Data Change Events With WildFly Swarm
 
 Finally, let's explore how to consume the Debezium events in a custom application and forward them to a web UI using WebSockets.
 
@@ -519,3 +531,15 @@ Once deployed, visit the application in a new browser window:
 http://websocketsinkapp-default.<YOUR_IP>.xip.io/
 
 Modify some entries in the CRUD application and observe how the change events are propagated to the other browser window via WebSockets in near-realtime.
+
+=== Summary
+
+In this part of the lab you've learned about the concept of change data capture and how to implement it using Debezium and Kafka (Connect).
+You've set up the Debezium connector for MySQL to ingest changes of an existing Java EE application,
+without requiring any code changes to that application.
+Then you've explored different ways for consuming the change events:
+using Kafka Connect and the JDBC sink adaptor to simply stream the data into a Postgres database
+and using WildFly Swarm and CDI to consume change events programmatically and relay them to a web browser using WebSockets.
+
+To learn more about Debezium, refer to its homepage http://debezium.io[http://debezium.io],
+where you can find an extensive tutorial, documentation and more.
