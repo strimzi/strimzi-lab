@@ -1,3 +1,545 @@
-== Running hiking demo with Kafka Connect and Debezium
+== Change Data Capture with Kafka Connect and Debezium
 
-TBD
+This part of the lab introduces you to change data capture (CDC) using http://debezium.io/[Debezium].
+Debezium allows you to capture data changes from MySQL, Postgres and MongoDB and stream those events into Apache Kafka.
+It is based on Kafka Connect.
+Streaming data changes from your database enables many interesting use cases such as
+
+* Replication of data across databases by different vendors
+* Synchronizing data between microservices
+* Updating fulltext search indexes (e.g. Elasticsearch) or caches (e.g. JBoss Data Grid)
+* Running stream queries such as sliding averages of the value of incoming orders etc.
+
+In the following you'll learn the following things:
+
+* Setting up Kafka Connect with the Debezium CDC connectors
+* Setting up the Debezium MySQL connector, ingesting changes from an existing example CRUD application
+* Different ways of processing change data events
+** Streaming data changes to a Postgres sink database
+** Programmatically consuming change events using WildFly Swarm and CDI and streaming them to a web browser via WebSockets
+
+=== Setting Up the Example Application
+
+We've prepared a small CRUD application which we'll use in the following as source of data change events.
+It is a Java EE application running on WildFly and using MySQL as its database.
+
+Start a MySQL instance by running:
+
+[source]
+oc new-app --name=mysql debezium/example-mysql:0.7
+oc env dc/mysql MYSQL_ROOT_PASSWORD=debezium MYSQL_USER=mysqluser MYSQL_PASSWORD=mysqlpw
+
+Then build and start the application.
+This uses the https://github.com/openshift-s2i/s2i-wildfly[WildFly S2I] ("source to image") builder image which will fetch the application's source code from the given location,
+build it using Maven and deploy it to WildFly, setting up a MySQL datasource using the given credentials:
+
+[source]
+oc new-app --name=hikingapp openshift/wildfly-120-centos7:latest~https://github.com/strimzi/strimzi-lab.git \
+    --context-dir=hiking-demo \
+    -e MYSQL_DATABASE=inventory \
+    -e MYSQL_PASSWORD=mysqlpw \
+    -e MYSQL_USER=mysqluser \
+    -e MYSQL_DATASOURCE=HikingDS
+oc expose svc hikingapp
+
+Verify that the pods of the database and the application are running:
+
+[source]
+oc get pods
+
+Access the application in your web browser:
+
+[source]
+http://hikingapp-default.<YOUR_IP>.xip.io/
+
+You can use "Populate Data" to create some example data.
+Otherwise just insert a few records as you like.
+
+=== Setting Up Kafka Connect With the Debezium Connectors
+
+Now it's time to deploy https://kafka.apache.org/documentation/#connect[Kafka Connect] and Debezium.
+Kafka Connect is a platform for streaming data between Apache Kafka and other systems.
+It provides a framework and runtime environment for _source connectors_ (for getting data into Kafka)
+and _sink connectors_ (for getting data out of Kafka).
+Debezium provides a set of CDC source connectors for databases such as MySQL, Postgres and MongoDB.
+
+Let's begin by setting up a Kafka Connect cluster,
+using the S2I process provided by Strimzi.
+This makes it very easy to create a Kafka Connect cluster with additional connectors such as the ones provided by Debezium:
+
+[source]
+----
+oc new-app strimzi-connect-s2i \
+    -p CLUSTER_NAME=debezium \
+    -p KAFKA_CONNECT_BOOTSTRAP_SERVERS=my-cluster-kafka:9092 \
+    -p KAFKA_CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR=1 \
+    -p KAFKA_CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR=1 \
+    -p KAFKA_CONNECT_STATUS_STORAGE_REPLICATION_FACTOR=1
+
+export DEBEZIUM_VERSION=0.7.5
+mkdir -p plugins && cd plugins && \
+for PLUGIN in {mongodb,mysql,postgres}; do \
+    curl http://central.maven.org/maven2/io/debezium/debezium-connector-$PLUGIN/$DEBEZIUM_VERSION/debezium-connector-$PLUGIN-$DEBEZIUM_VERSION-plugin.tar.gz | tar xz; \
+done && \
+mkdir confluent-jdbc-sink && cd confluent-jdbc-sink && \
+curl -O http://central.maven.org/maven2/org/postgresql/postgresql/42.2.2/postgresql-42.2.2.jar && \
+curl -O http://packages.confluent.io/maven/io/confluent/kafka-connect-jdbc/3.3.0/kafka-connect-jdbc-3.3.0.jar && \
+cd .. && \
+oc start-build debezium-connect --from-dir=. --follow && \
+cd .. && rm -rf plugins
+----
+
+Register an instance of the Debezium MySQL connector:
+
+[source]
+----
+oc exec -i my-cluster-kafka-0 -- curl -s -X POST \
+    -H "Accept:application/json" \
+    -H "Content-Type:application/json" \
+    http://debezium-connect:8083/connectors -d @- <<'EOF'
+
+{
+    "name": "inventory-connector",
+    "config": {
+        "connector.class": "io.debezium.connector.mysql.MySqlConnector",
+        "tasks.max": "1",
+        "database.hostname": "mysql",
+        "database.port": "3306",
+        "database.user": "debezium",
+        "database.password": "dbz",
+        "database.server.id": "184054",
+        "database.server.name": "dbserver1",
+        "database.whitelist": "inventory",
+        "database.history.kafka.bootstrap.servers": "my-cluster-kafka:9092",
+        "database.history.kafka.topic": "schema-changes.inventory"
+    }
+}
+EOF
+----
+
+This sets up an instance of Debezium's `io.debezium.connector.mysql.MySqlConnector` class,
+using the given credentials.
+
+Kafka Connect’s log file should contain messages regarding execution of initial snapshot:
+
+[source]
+----
+oc logs $(oc get pods -o name -l app=strimzi-connect-s2i)
+----
+
+You can examine CDC messages in Kafka using the console consumer:
+
+[source]
+----
+oc exec -it my-cluster-kafka-0 -- /opt/kafka/bin/kafka-console-consumer.sh \
+   --bootstrap-server localhost:9092 \
+   --from-beginning \
+   --property print.key=true \
+   --topic dbserver1.inventory.Hike
+----
+
+You should see messages comprising of a key and a value like the following (formatted for the sake readability),
+representing the `Hike` records as per the initial snapshot.
+
+Key:
+
+[source]
+----
+{
+    "schema": {
+        "type": "struct",
+        "fields": [
+            {
+                "type": "int64",
+                "optional": false,
+                "field": "id"
+            }
+        ],
+        "optional": false,
+        "name": "dbserver1.inventory.Hike.Key"
+    },
+    "payload": {
+        "id": 4
+    }
+}
+----
+
+Value:
+
+[source]
+----
+{
+    "schema": {
+        "type": "struct",
+        "fields": [
+            {
+                "type": "struct",
+                "fields": [
+                    {
+                        "type": "int64",
+                        "optional": false,
+                        "field": "id"
+                    },
+                    {
+                        "type": "string",
+                        "optional": false,
+                        "field": "destination"
+                    },
+                    {
+                        "type": "string",
+                        "optional": false,
+                        "field": "start"
+                    },
+                    {
+                        "type": "int64",
+                        "optional": true,
+                        "field": "recommendedTrip_id"
+                    }
+                ],
+                "optional": true,
+                "name": "dbserver1.inventory.Hike.Value",
+                "field": "before"
+            },
+            {
+                "type": "struct",
+                "fields": [
+                    {
+                        "type": "int64",
+                        "optional": false,
+                        "field": "id"
+                    },
+                    {
+                        "type": "string",
+                        "optional": false,
+                        "field": "destination"
+                    },
+                    {
+                        "type": "string",
+                        "optional": false,
+                        "field": "start"
+                    },
+                    {
+                        "type": "int64",
+                        "optional": true,
+                        "field": "recommendedTrip_id"
+                    }
+                ],
+                "optional": true,
+                "name": "dbserver1.inventory.Hike.Value",
+                "field": "after"
+            },
+            {
+                "type": "struct",
+                "fields": [
+                    {
+                        "type": "string",
+                        "optional": true,
+                        "field": "version"
+                    },
+                    {
+                        "type": "string",
+                        "optional": false,
+                        "field": "name"
+                    },
+                    {
+                        "type": "int64",
+                        "optional": false,
+                        "field": "server_id"
+                    },
+                    {
+                        "type": "int64",
+                        "optional": false,
+                        "field": "ts_sec"
+                    },
+                    {
+                        "type": "string",
+                        "optional": true,
+                        "field": "gtid"
+                    },
+                    {
+                        "type": "string",
+                        "optional": false,
+                        "field": "file"
+                    },
+                    {
+                        "type": "int64",
+                        "optional": false,
+                        "field": "pos"
+                    },
+                    {
+                        "type": "int32",
+                        "optional": false,
+                        "field": "row"
+                    },
+                    {
+                        "type": "boolean",
+                        "optional": true,
+                        "default": false,
+                        "field": "snapshot"
+                    },
+                    {
+                        "type": "int64",
+                        "optional": true,
+                        "field": "thread"
+                    },
+                    {
+                        "type": "string",
+                        "optional": true,
+                        "field": "db"
+                    },
+                    {
+                        "type": "string",
+                        "optional": true,
+                        "field": "table"
+                    }
+                ],
+                "optional": false,
+                "name": "io.debezium.connector.mysql.Source",
+                "field": "source"
+            },
+            {
+                "type": "string",
+                "optional": false,
+                "field": "op"
+            },
+            {
+                "type": "int64",
+                "optional": true,
+                "field": "ts_ms"
+            }
+        ],
+        "optional": false,
+        "name": "dbserver1.inventory.Hike.Envelope"
+    },
+    "payload": {
+        "before": null,
+        "after": {
+            "id": 4,
+            "destination": "Yovimpa Pass",
+            "start": "Rainbow Point",
+            "recommendedTrip_id": 2
+        },
+        "source": {
+            "version": "0.7.5",
+            "name": "dbserver1",
+            "server_id": 0,
+            "ts_sec": 0,
+            "gtid": null,
+            "file": "mysql-bin.000003",
+            "pos": 6196,
+            "row": 0,
+            "snapshot": true,
+            "thread": null,
+            "db": "inventory",
+            "table": "Hike"
+        },
+        "op": "c",
+        "ts_ms": 1524146925953
+    }
+}
+----
+
+Message key and value use JSON (the binary Avro format could be used alternatively),
+and both contain a payload as well as a schema describing the structure of the payload.
+
+The key's payload resembles the primary key of the represented record.
+The value's payload contains information of
+
+* the old state of the changed row (`before`, which is null in the case of an insert or record created during snapshotting)
+* the new state of the changed row (`after`)
+* metadata such as the table and database name, a timestamp etc.
+
+If you now use the web app to insert, update or delete records, you'll see how corresponding CDC messages arrive in the topic.
+
+Using the Kafka Connect REST API, you also can query the list of connectors, query the status of a given connector, delete a connector and more:
+
+[source]
+----
+# List all connectors
+oc exec -i my-cluster-kafka-0 -- curl -s -X GET \
+    -H "Accept:application/json" \
+    -H "Content-Type:application/json" \
+    http://debezium-connect:8083/connectors
+----
+
+[source]
+----
+# Get status of "inventory-connector"
+oc exec -i my-cluster-kafka-0 -- curl -s -X GET \
+    -H "Accept:application/json" \
+    -H "Content-Type:application/json" \
+    http://debezium-connect:8083/connectors/inventory-connector/status
+----
+
+[source]
+----
+# Delete "inventory-connector"
+oc exec -i my-cluster-kafka-0 -- curl -s -X DELETE \
+    -H "Accept:application/json" \
+    -H "Content-Type:application/json" \
+    http://debezium-connect:8083/connectors/inventory-connector
+----
+
+=== Processing Change Data Events
+
+Examining change events in the Kafka console is a good first step,
+but eventually we'd like to consume the events in a more meaningful way.
+
+In the following different ways for consuming events are explored.
+You can choose the one you are most interested in or walk through all the alternatives,
+as your preference.
+
+==== Streaming Data Changes to a Postgres Sink Database
+
+To stream data changes into another database, no manual programming effort is needed.
+Instead, the Confluent JDBC sink connector for Kafka Connect can be used to data into a target database.
+
+So let's set up another database (Postgres in this case) and stream the data changes there.
+
+[source]
+----
+oc new-app \
+    -e POSTGRESQL_USER=postgresuser \
+    -e POSTGRESQL_PASSWORD=postgrespw \
+    -e POSTGRESQL_DATABASE=inventory \
+    centos/postgresql-95-centos7
+----
+
+Once the database has started, register an instance of the Confluent JDBC sink connector:
+
+[source]
+----
+oc exec -i my-cluster-kafka-0 -- curl -X POST \
+    -H "Accept:application/json" \
+    -H "Content-Type:application/json" \
+    http://debezium-connect:8083/connectors -d @- <<'EOF'
+{
+    "name": "jdbc-sink",
+    "config": {
+        "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
+        "tasks.max": "1",
+        "topics": "dbserver1.inventory.Hike",
+        "connection.url": "jdbc:postgresql://postgresql-95-centos7:5432/inventory?user=postgresuser&password=postgrespw",
+        "transforms": "unwrap",
+        "transforms.unwrap.type": "io.debezium.transforms.UnwrapFromEnvelope",
+        "auto.create": "true",
+        "insert.mode": "upsert",
+        "pk.fields": "id",
+        "pk.mode": "record_value"
+    }
+}
+EOF
+----
+
+This sets up an an instance of `io.confluent.connect.jdbc.JdbcSinkConnector`,
+listening to the `dbserver1.inventory.Hike` and streaming all data changes to the given database connection.
+As this sink connector just expects the effective state of changed rows
+(i.e. the "after" part from the Debezium data change messages),
+only this part is extracted using Debezium's `UnwrapFromEnvelope` SMT (single message transform).
+
+With the sink connector being set up, we can take a look into the Postgres database and see how the table changes are propgated there.
+Get a shell on the pod of the Postgres service:
+
+[source]
+----
+oc rsh $(oc get pods -o name -l app=postgresql-95-centos7)
+----
+
+Run a query to get all records from the table corresponding to the monitored topic:
+
+[source]
+----
+psql -U postgresuser inventory -c 'select * from "dbserver1.inventory.Hike"'
+----
+
+As you alter records in the source web application,
+you'll see how the table in Postgres gets updated accordingly, if you re-execute the query.
+Note that `DELETE` operations currently cannot be propagated, as they are not yet supported by the Confluent JDBC sink connector.
+
+To leave the shell on the Postgres pod, run:
+
+[source]
+----
+exit
+----
+
+As an experiment, you also can explore how the streaming approach ensures a loose coupling of the involved components.
+Scale down the pods of the "strimzi-connect-s2i" application to 0:
+
+[source]
+----
+oc scale --replicas=0 dc/debezium-connect
+----
+
+You'll still be able to edit records in the source application,
+but as Kafka Connect - and with it Debezium - isn't running,
+the changes won't be propagated to the sink database.
+
+Once Kafka Connect is restarted again, the connector will automatically pick up where it left before and after a while,
+you'll see all changes that had occurred in the connector's downtime in the sink database:
+
+[source]
+----
+oc scale --replicas=1 dc/debezium-connect
+----
+
+==== Consuming Data Change Events With WildFly Swarm
+
+Finally, let's explore how to consume the Debezium events in a custom application and forward them to a web UI using WebSockets.
+
+The example application for that is based on http://wildfly-swarm.io/[WildFly Swarm],
+which provides an alternative approach for packaging and running Java EE applications.
+Instead of deploying to an application server, WildFly Swarm creates a self-contained executable JAR
+which contains your application and just those parts of the Java EE platform which it requires.
+
+The application sources are provided at the lab's https://github.com/strimzi/strimzi-lab/tree/master/debezium-swarm-demo[GitHub repo].
+Again we're using an S2I process for building and deploying the application:
+
+[source]
+----
+oc new-app --name=websocketsinkapp fabric8/s2i-java:latest~https://github.com/strimzi/strimzi-lab.git \
+    --context-dir=debezium-swarm-demo \
+    -e MYSQL_DATABASE=inventory \
+    -e AB_PROMETHEUS_OFF=true \
+    -e KAFKA_SERVICE_HOST=my-cluster-kafka \
+    -e KAFKA_SERVICE_PORT=9092
+----
+
+In this case we're using the https://hub.docker.com/r/fabric8/s2i-java/[Java S2I image] provided by the fabric8 project.
+(Note there's commercial support available for running WildFly Swarm applications on OpenShift in form of the https://developers.redhat.com/products/rhoar/overview/[RHOAR product]).
+
+We still need to expose port 8080 for the application and set up a route for it
+(as that's not done automatically by the S2I builder image).
+To do so, use `oc patch` and expose a route for the service like so:
+
+[source]
+----
+oc patch service websocketsinkapp -p '{ "spec" : { "ports" : [{ "name" : "8080-tcp", "port" : 8080, "protocol" : "TCP", "targetPort" : 8080 }] } } }'
+
+oc expose svc websocketsinkapp
+----
+
+To consume the Debezium CDC events from the Kafka topic,
+the application uses a https://github.com/aerogear/kafka-cdi[kafka-cdi], a CDI portable extension provided by the AeroGear project.
+This happens in the `WebSocketChangeEventHandler` class.
+All it then needs to do is to push all incoming events via WebSockets to all connected clients.
+For that purpose, the `ChangeEventsWebsocketEndpoint` class registers all clients with the event handler upon connection creation.
+
+Once deployed, visit the application in a new browser window:
+
+[source]
+http://websocketsinkapp-default.<YOUR_IP>.xip.io/
+
+Modify some entries in the CRUD application and observe how the change events are propagated to the other browser window via WebSockets in near-realtime.
+
+=== Summary
+
+In this part of the lab you've learned about the concept of change data capture and how to implement it using Debezium and Kafka (Connect).
+You've set up the Debezium connector for MySQL to ingest changes of an existing Java EE application,
+without requiring any code changes to that application.
+Then you've explored different ways for consuming the change events:
+using Kafka Connect and the JDBC sink adaptor to simply stream the data into a Postgres database
+and using WildFly Swarm and CDI to consume change events programmatically and relay them to a web browser using WebSockets.
+
+To learn more about Debezium, refer to its homepage http://debezium.io[http://debezium.io],
+where you can find an extensive tutorial, documentation and more.
