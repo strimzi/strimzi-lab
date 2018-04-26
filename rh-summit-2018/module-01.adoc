@@ -301,14 +301,14 @@ Before starting to develop data streaming applications and running them, let's s
 
 ==== Updating Kafka cluster
 
-Starting from the current Kafka cluster with 3 brokers, we want to add a new one.
+Starting from the current Kafka cluster with 3 brokers, we want to add two more.
 In order to do that, the related `my-cluster` config map needs to be updated using the "edit" command provided by the `oc` tool.
 
 [source,sh]
 $ oc edit cm my-cluster
 
-It opens the default editor that we can use in order to change the value of the `kafka-nodes` field from 3 to 4.
-After saving the file, the Cluster Controller detects the update and starts a new broker Pod; it's just a simple scale-up operation.
+It opens the default editor that we can use in order to change the value of the `kafka-nodes` field from 3 to 5.
+After saving the file, the Cluster Controller detects the update and starts a two new broker Pods; it's just a simple scale-up operation.
 
 Now we want to do something more interesting like changing a Kafka broker configuration parameter, for example the `KAFKA_DEFAULT_REPLICATION_FACTOR` one modifying its value from 1 to 2.
 
