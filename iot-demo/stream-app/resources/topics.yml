@@ -3,6 +3,7 @@ kind: ConfigMap
 metadata:
   name: iot-temperature
   labels:
+    app: iot-demo
     strimzi.io/kind: topic
     strimzi.io/cluster: my-cluster
 data:
@@ -15,6 +16,7 @@ kind: ConfigMap
 metadata:
   name: iot-temperature-max
   labels:
+    app: iot-demo
     strimzi.io/kind: topic
     strimzi.io/cluster: my-cluster
 data:

@@ -2,11 +2,14 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: consumer-app
+  labels:
+    app: iot-demo
 spec:
   replicas: 1
   template:
     metadata:
       labels:
+        app: iot-demo
         name: consumer-app
     spec:
       containers:
@@ -21,3 +24,33 @@ spec:
               value: "iot-temperature-max"
             - name: CONSUMER_AUTO_OFFSET_RESET
               value: "earliest"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: iot-demo
+    name: consumer-app
+  name: consumer-app
+spec:
+  ports:
+  - name: http
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    name: consumer-app
+---
+apiVersion: v1
+kind: Route
+metadata:
+  labels:
+    app: iot-demo
+    name: consumer-app
+  name: consumer-app
+spec:
+  port:
+    targetPort: http
+  to:
+    kind: Service
+    name: consumer-app

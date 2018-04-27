@@ -2,11 +2,14 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: stream-app
+  labels:
+    app: iot-demo
 spec:
   replicas: 1
   template:
     metadata:
       labels:
+        app: iot-demo
         name: stream-app
     spec:
       containers:

@@ -39,8 +39,6 @@ It's deployed running following command :
 
 [source,sh]
 $ oc create -f https://raw.githubusercontent.com/strimzi/strimzi-lab/master/iot-demo/consumer-app/resources/consumer-app.yml
-$ oc create -f https://raw.githubusercontent.com/strimzi/strimzi-lab/master/iot-demo/consumer-app/resources/consumer-svc.yml
-$ oc create -f https://raw.githubusercontent.com/strimzi/strimzi-lab/master/iot-demo/consumer-app/resources/consumer-route.yml
 
 A route is provided in order to access the related Web UI.
 
@@ -80,3 +78,27 @@ Opening the consumer Web UI it's possible to see the "gauges" charts showing the
 The right side is useful to see the log of the incoming messages from devices, showing the device id alongside the max temperature value processed by the stream application for such a device.
 
 image::more_device_gauges.png[more device gauges]
+
+=== Clean up
+
+Before moving to the next module, it's useful to clean up the current deployment deleting all the related resources in terms of Pods, Services, Routes and Deployments.
+
+[source,sh]
+$ oc delete all -l app=iot-demo
+route "consumer-app" deleted
+pod "consumer-app-3541966467-wpq25" deleted
+pod "device-app-3765817752-sd7lk" deleted
+pod "stream-app-3267945040-8hztf" deleted
+service "consumer-app" deleted
+deployment "consumer-app" deleted
+deployment "device-app" deleted
+deployment "stream-app" deleted
+
+And finally the topic config maps
+
+[source,sh]
+$ oc delete cm -l strimzi.io/kind=topic
+configmap "iot-temperature" deleted
+configmap "iot-temperature-max" deleted
+configmap "streams-temperature-kstream-reduce-state-store-0000000001-changelog---419dc8153c3f17b91352f18537da3886a84f3935" deleted
+
