@@ -309,6 +309,39 @@ $ oc edit cm my-cluster
 
 It opens the default editor that we can use in order to change the value of the `kafka-nodes` field from 3 to 5.
 After saving the file, the Cluster Controller detects the update and starts a two new broker Pods; it's just a simple scale-up operation.
+You can see this by visualizing the pods again:
+
+[source,sh]
+$ oc get pods
+NAME                                           READY     STATUS    RESTARTS   AGE
+my-cluster-kafka-0                             1/1       Running   0          9m
+my-cluster-kafka-1                             1/1       Running   0          9m
+my-cluster-kafka-2                             1/1       Running   0          9m
+my-cluster-kafka-3                             1/1       Running   0          1m
+my-cluster-kafka-4                             1/1       Running   0          1m
+my-cluster-topic-controller-1422164134-f9n8r   1/1       Running   0          8m
+my-cluster-zookeeper-0                         1/1       Running   0          10m
+strimzi-cluster-controller-2044197322-lzrvr    1/1       Running   0          18m
+
+Notice the new pods `my-cluster-kafka-3` and `my-cluster-kafka-4`.
+For the rest of the lab, we only need three Kafka brokers, so we recommend to size down the cluster to 3 nodes, by editing the config map again:
+
+[source,sh]
+$ oc edit cm my-cluster
+
+Set the `kafka-nodes` field back to 3 and check that the two additional pods have been shut down.
+
+[source,sh]
+$ oc get pods
+NAME                                           READY     STATUS    RESTARTS   AGE
+my-cluster-kafka-0                             1/1       Running   0          11m
+my-cluster-kafka-1                             1/1       Running   0          11m
+my-cluster-kafka-2                             1/1       Running   0          11m
+my-cluster-topic-controller-1422164134-f9n8r   1/1       Running   0          10m
+my-cluster-zookeeper-0                         1/1       Running   0          12m
+strimzi-cluster-controller-2044197322-lzrvr    1/1       Running   0          20m
+
+
 
 Now we want to do something more interesting like changing a Kafka broker configuration parameter, for example the `KAFKA_DEFAULT_REPLICATION_FACTOR` one modifying its value from 1 to 2.
 
