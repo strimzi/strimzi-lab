@@ -82,7 +82,7 @@ NAME                                          READY     STATUS    RESTARTS   AGE
 strimzi-cluster-controller-2044197322-lzrvr   1/1       Running   0          3m
 
 Next, install the Strimzi templates.
-The templates contain predefined config maps for easily deploying clusters (for Kafka Connect as well).
+The Cluster Controller related templates contain predefined config maps for easily deploying clusters (for Kafka Connect as well).
 
 [source, sh]
 $ oc create -f examples/templates/cluster-controller
@@ -90,6 +90,10 @@ template "strimzi-connect-s2i" created
 template "strimzi-connect" created
 template "strimzi-ephemeral" created
 template "strimzi-persistent" created
+
+The Topic Controller related templates contain prededefined config map for easily create a new Kafka topic.
+$ oc create -f examples/templates/topic-controller
+template "strimzi-topic" created
 
 Now you can deploy a Kafka cluster by creating a config map.
 For this lab, we will use a template, but you can create and deploy a regular config map as well.
@@ -290,6 +294,182 @@ After importing the dashboard, the Grafana home should show with some initial me
 When the Kafka cluster is used (creating topics and exchanging messages) the other metrics, like messages in and bytes in/out per topic, will be shown.
 
 image::grafana_kafka_dashboard.png[grafana kafka dashboard]
+
+=== Handling cluster and topics
+
+Before starting to develop data streaming applications and running them, let's see how it's possible to handle the Kafka cluster itself and the topics.
+
+==== Updating Kafka cluster
+
+Starting from the current Kafka cluster with 3 brokers, we want to add two more.
+In order to do that, the related `my-cluster` config map needs to be updated using the "edit" command provided by the `oc` tool.
+
+[source,sh]
+$ oc edit cm my-cluster
+
+It opens the default editor that we can use in order to change the value of the `kafka-nodes` field from 3 to 5.
+After saving the file, the Cluster Controller detects the update and starts a two new broker Pods; it's just a simple scale-up operation.
+You can see this by visualizing the pods again:
+
+[source,sh]
+$ oc get pods
+NAME                                           READY     STATUS    RESTARTS   AGE
+my-cluster-kafka-0                             1/1       Running   0          9m
+my-cluster-kafka-1                             1/1       Running   0          9m
+my-cluster-kafka-2                             1/1       Running   0          9m
+my-cluster-kafka-3                             1/1       Running   0          1m
+my-cluster-kafka-4                             1/1       Running   0          1m
+my-cluster-topic-controller-1422164134-f9n8r   1/1       Running   0          8m
+my-cluster-zookeeper-0                         1/1       Running   0          10m
+strimzi-cluster-controller-2044197322-lzrvr    1/1       Running   0          18m
+
+Notice the new pods `my-cluster-kafka-3` and `my-cluster-kafka-4`.
+For the rest of the lab, we only need three Kafka brokers, so we recommend to size down the cluster to 3 nodes, by editing the config map again:
+
+[source,sh]
+$ oc edit cm my-cluster
+
+Set the `kafka-nodes` field back to 3 and check that the two additional pods have been shut down.
+
+[source,sh]
+$ oc get pods
+NAME                                           READY     STATUS    RESTARTS   AGE
+my-cluster-kafka-0                             1/1       Running   0          11m
+my-cluster-kafka-1                             1/1       Running   0          11m
+my-cluster-kafka-2                             1/1       Running   0          11m
+my-cluster-topic-controller-1422164134-f9n8r   1/1       Running   0          10m
+my-cluster-zookeeper-0                         1/1       Running   0          12m
+strimzi-cluster-controller-2044197322-lzrvr    1/1       Running   0          20m
+
+
+
+Now we want to do something more interesting like changing a Kafka broker configuration parameter, for example the `KAFKA_DEFAULT_REPLICATION_FACTOR` one modifying its value from 1 to 2.
+
+Before doing that let's check that the default replication factor is 1 getting the log from one of the running brokers.
+
+[source,sh]
+$ oc logs my-cluster-kafka-0 | grep default.replication.factor
+default.replication.factor=1
+	default.replication.factor = 1
+
+In the same way as before you can use the "edit" command and updating that value in the default editor.
+
+[source,sh]
+$ oc edit cm my-cluster
+
+This kind of update is much more complex because changing the Kafka broker configuration we want all the running brokers being update so it means that each broker needs to be restarted in order to get the new configuration.
+In this case, detecting the config map update, the Cluster Controller starts a "rolling update" and each broker Pod is killed one by one and then restarted with the new configuration.
+
+When the "rolling update" is finished we can check that the default replication factor is changed to 2.
+
+[source,sh]
+$ oc logs my-cluster-kafka-0 | grep default.replication.factor
+default.replication.factor=2
+	default.replication.factor = 2
+
+==== Handling topics
+
+It's possible to create a topic just creating a regular config map but for this lab we are going to use the related template.
+
+[source,sh]
+$ oc new-app strimzi-topic
+
+The expected output should be similar to:
+[source,sh]
+-----
+--> Deploying template "myproject/strimzi-topic" to project myproject
+
+     Apache Kafka Topic
+     ---------
+     This template creates a "Topic ConfigMap". Used in conjunction with the Strimzi topic controller this will create a corresponding topic in a Strimzi Kafka cluster. For more information about using this template see http://strimzi.io
+
+     * With parameters:
+        * Name of the Kafka cluster=my-cluster
+        * Name of the ConfigMap=my-topic
+        * Name of the topic=my-topic
+        * Number of partitions=1
+        * Number of replicas=1
+        * Topic config={}
+
+--> Creating resources ...
+    configmap "my-topic" created
+--> Success
+    Run 'oc status' to view your app.
+-----
+
+The key resource is the `my-topic` config map.
+
+Let's see what it contains.
+
+[source,sh]
+---------
+$ oc get cm my-topic -o yaml
+apiVersion: v1
+data:
+  config: '{}'
+  name: my-topic
+  partitions: "1"
+  replicas: "1"
+kind: ConfigMap
+metadata:
+  annotations:
+    openshift.io/generated-by: OpenShiftNewApp
+  creationTimestamp: 2018-04-26T09:34:37Z
+  labels:
+    app: strimzi-topic
+    strimzi.io/cluster: my-cluster
+    strimzi.io/kind: topic
+  name: my-topic
+  namespace: myproject
+  resourceVersion: "10543"
+  selfLink: /api/v1/namespaces/myproject/configmaps/my-topic
+  uid: 092b92f2-4935-11e8-82f5-54ee758f9350
+---------
+
+The properties of the map control the topic configuration.
+
+In order to check that the Topic Controller has dected the new config map and created a related topic in the Kafka cluster, we can run the official `kafka-topics.sh` tool on one of the brokers.
+
+[source,sh]
+$ oc exec -it my-cluster-kafka-0 -- bin/kafka-topics.sh --zookeeper my-cluster-zookeeper:2181 --list
+my-topic
+
+We can also describing it for getting more information.
+
+[source,sh]
+$ oc exec -it my-cluster-kafka-0 -- bin/kafka-topics.sh --zookeeper my-cluster-zookeeper:2181 --describe --topic my-topic
+Topic:my-topic	PartitionCount:1	ReplicationFactor:1	Configs:
+	Topic: my-topic	Partition: 0	Leader: 1	Replicas: 1	Isr: 1
+
+Let's increase the partitions number now.
+It's possible just updating the related config map and changing the `partitions` data field from 1 to 3, for example using the "edit" command provided by the `oc` tool.
+
+[source,sh]
+$ oc edit cm my-topic
+
+The Topic Controller detects this update and updates the related Kafka topic accordingly.
+We can check that describing the topic one more time.
+
+[source,sh]
+$ oc exec -it my-cluster-kafka-0 -- bin/kafka-topics.sh --zookeeper my-cluster-zookeeper:2181 --describe --topic my-topic
+Topic:my-topic	PartitionCount:3	ReplicationFactor:1	Configs:
+	Topic: my-topic	Partition: 0	Leader: 1	Replicas: 1	Isr: 1
+	Topic: my-topic	Partition: 1	Leader: 2	Replicas: 2	Isr: 2
+	Topic: my-topic	Partition: 2	Leader: 3	Replicas: 3	Isr: 3
+
+Finally, a topic can be deleted just deleting the related config map.
+
+[source,sh]
+$ oc delete cm my-topic
+configmap "my-topic" deleted
+
+The Topic Controller detects the deletion and deletes the related Kafka topic from the cluster.
+We can check that listing the available topics.
+
+[source,sh]
+$ oc exec -it my-cluster-kafka-0 -- bin/kafka-topics.sh --zookeeper my-cluster-zookeeper:2181 --list
+
+This time the output should be empty.
 
 Now your Kafka cluster is running and ready to go.
 Let's build some applications!
