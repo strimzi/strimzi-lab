@@ -74,8 +74,6 @@ It's deployed running following command :
 
 ```
 oc create -f ./consumer-app/resources/consumer-app.yml
-oc create -f ./consumer-app/resources/consumer-svc.yml
-oc create -f ./consumer-app/resources/consumer-route.yml
 ```
 
 A route is provided in order to access the related Web UI.
@@ -123,3 +121,17 @@ active devices on the left side. The right side is useful to see the log of the 
 device id alongside the max temperature value processed by the stream application for such a device.
 
 ![more device gauges](images/more_device_gauges.png)
+
+## Clean up
+
+If you want it could be useful to clean up the current deployment deleting all the related resources in terms of Pods, Services, Routes and Deployments.
+
+```
+oc delete all -l app=iot-demo
+```
+
+And finally the topic config maps
+
+```
+oc delete cm -l strimzi.io/kind=topic
+```
