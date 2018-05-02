@@ -1,4 +1,4 @@
-= Running Data Streaming applications with Kafka on OpenShift
+= Running data streaming applications with Kafka on OpenShift
 :sectnums:
 :toc: left
 :toclevels: 3

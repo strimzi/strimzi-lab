@@ -17,7 +17,7 @@ Make note of the URLs that you will use during the lab.
 
 [NOTE]
 .Remember your GUID
-At the start of the lab you have been provided with a GUID , which uniquely identifies your lab environment.
+At the start of the lab you have been provided with a GUID, which uniquely identifies your lab environment.
 In the following instructions, replace the `<GUID>` placeholder with your GUID.
 For example, if your GUID is `a2b3`, the URL `workstation-<GUID>.example.com` becomes `workstation-a2b3.example.com`.
 
