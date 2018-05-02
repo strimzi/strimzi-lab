@@ -1,4 +1,4 @@
-== Running IoT demo with Kafka Streams API
+== Running an IoT application with Kafka Streams
 
 The IoT demo is made by different components with the following architecture :
 
@@ -101,4 +101,3 @@ $ oc delete cm -l strimzi.io/kind=topic
 configmap "iot-temperature" deleted
 configmap "iot-temperature-max" deleted
 configmap "streams-temperature-kstream-reduce-state-store-0000000001-changelog---419dc8153c3f17b91352f18537da3886a84f3935" deleted
-

@@ -1,0 +1,9 @@
+modules:
+  basics:
+    name: Understanding the lab environment
+  module-01:
+    name: Deploying an Apache Kafka cluster with Strimzi
+  module-02:
+    name: Running an IoT application with Kafka Streams
+  module-03:
+    name: Change Data Capture with Kafka Connect and Debezium
