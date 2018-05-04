@@ -61,10 +61,12 @@ hikingapp-1-m4rss                             1/1       Running     0          3
 mysql-2-gk8nw                                 1/1       Running     0          2m
 ...
 
-Access the application in your web browser:
+The hostname of the exposed hikingapp service is available in the OpenShift console, or can be retrieved via CLI:
 
 [source]
-http://hikingapp-l1099-kafka.apps-<GUID>.generic.opentlc.com/
+oc get routes hikingapp -o=jsonpath='{.spec.host}{"\n"}'
+
+Note the output, which should be in the format hikingapp-l1099-kafka.apps-<GUID>.generic.opentlc.com and you can navigate there using a browser.
 
 You can use "Populate Data" to create some example data (Click on "Search hikes" after that to see the created entries).
 Otherwise just insert a few records as you like.
