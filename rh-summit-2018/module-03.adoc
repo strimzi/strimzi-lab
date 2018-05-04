@@ -33,6 +33,7 @@ Then build and start the application.
 This uses the https://github.com/openshift-s2i/s2i-wildfly[WildFly S2I] ("source to image") builder image which will fetch the application's source code from the given location, build it using Maven and deploy it to WildFly, setting up a MySQL datasource using the given credentials:
 
 [source,sh]
+----
 oc new-app --name=hikingapp openshift/wildfly-120-centos7:latest~https://github.com/strimzi/strimzi-lab.git \
     --context-dir=hiking-demo \
     -e MYSQL_DATABASE=inventory \
@@ -40,6 +41,10 @@ oc new-app --name=hikingapp openshift/wildfly-120-centos7:latest~https://github.
     -e MYSQL_USER=mysqluser \
     -e MYSQL_DATASOURCE=HikingDS
 oc expose svc hikingapp
+
+# Make subsequent builds of the application executing faster
+oc patch bc/hikingapp -p '{"spec":{"strategy":{"sourceStrategy":{"incremental":true}}}}'
+----
 
 Verify that the pods of the database and the application are running:
 
@@ -516,7 +521,7 @@ which contains your application and just those parts of the Java EE platform whi
 The application sources are provided at the lab's https://github.com/strimzi/strimzi-lab/tree/master/debezium-swarm-demo[GitHub repo].
 Again we're using an S2I process for building and deploying the application:
 
-[source]
+[source,sh]
 ----
 oc new-app --name=websocketsinkapp fabric8/s2i-java:latest~https://github.com/strimzi/strimzi-lab.git \
     --context-dir=debezium-swarm-demo \
@@ -524,6 +529,9 @@ oc new-app --name=websocketsinkapp fabric8/s2i-java:latest~https://github.com/st
     -e AB_PROMETHEUS_OFF=true \
     -e KAFKA_SERVICE_HOST=my-cluster-kafka \
     -e KAFKA_SERVICE_PORT=9092
+
+# Make subsequent builds of the application executing faster
+oc patch bc/websocketsinkapp -p '{"spec":{"strategy":{"sourceStrategy":{"incremental":true}}}}'
 ----
 
 In this case we're using the https://hub.docker.com/r/fabric8/s2i-java/[Java S2I image] provided by the fabric8 project.
