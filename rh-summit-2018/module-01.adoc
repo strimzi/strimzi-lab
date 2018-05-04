@@ -262,8 +262,7 @@ To deploy Grafana on OpenShift, the following commands should be executed:
 [source,sh]
 $ oc create -f https://raw.githubusercontent.com/strimzi/strimzi/master/metrics/examples/grafana/kubernetes.yaml
 
-For accessing the dashboard, you can use the `port-forward` command for forwarding traffic from the Grafana pod to the host.
-For example, you can access the Grafana UI after running:
+You can access the Grafana UI after running:
 
 [source,sh]
 $ oc expose svc/grafana
@@ -292,7 +291,7 @@ After "Add" is clicked, Grafana will test the connection to the data source.
 image::grafana_prometheus_data_source.png[grafana prometheus data source]
 
 From the top left menu, click on "Dashboards" and then "Import" to open the "Import Dashboard" window.
-Open a brower tab and navigate to `https://raw.githubusercontent.com/strimzi/strimzi/0.3.0/metrics/examples/grafana/kafka-dashboard.json`.
+Open a browser tab and navigate to `https://raw.githubusercontent.com/strimzi/strimzi/0.3.0/metrics/examples/grafana/kafka-dashboard.json`.
 You should see JSON content as response.
 Copy and paste it in the appropriate field in the form.
 
