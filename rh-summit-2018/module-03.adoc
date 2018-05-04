@@ -43,15 +43,25 @@ oc expose svc hikingapp
 
 Verify that the pods of the database and the application are running:
 
-[source]
+[source,sh]
 oc get pods
+
+The s2i build will take some time, as it has to fetch all the required Maven dependencies and plug-ins.
+Once the build has completed, you should see the following status:
+
+[source,sh]
+NAME                                          READY     STATUS    RESTARTS   AGE
+hikingapp-1-build                             0/1       Completed   0          2m
+hikingapp-1-m4rss                             1/1       Running     0          39s
+mysql-2-gk8nw                                 1/1       Running     0          2m
+...
 
 Access the application in your web browser:
 
 [source]
 http://hikingapp-l1099-kafka.apps-<GUID>.generic.opentlc.com/
 
-You can use "Populate Data" to create some example data.
+You can use "Populate Data" to create some example data (Click on "Search hikes" after that to see the created entries).
 Otherwise just insert a few records as you like.
 
 === Setting Up Kafka Connect With the Debezium Connectors
@@ -88,7 +98,18 @@ oc start-build debezium-connect --from-dir=. --follow && \
 cd .. && rm -rf plugins
 ----
 
-Register an instance of the Debezium MySQL connector:
+Use `oc get pods` again to verify that Kafka Connect is running:
+
+[source,sh]
+----
+oc get pods
+
+NAME                                          READY     STATUS    RESTARTS   AGE
+debezium-connect-2-mpscv                      1/1       Running     0          1m
+...
+----
+
+Once that's the case, register an instance of the Debezium MySQL connector using the REST API of Kafka Connect:
 
 [source]
 ----
@@ -118,6 +139,7 @@ EOF
 
 This sets up an instance of Debezium's `io.debezium.connector.mysql.MySqlConnector` class,
 using the given credentials.
+By specifying the `database.whitelist` option (or, on a more fine-grained level, `table.whitelist`), we can narrow down the set of captured tables.
 
 Kafka Connect’s log file should contain messages regarding execution of initial snapshot:
 
@@ -126,7 +148,7 @@ Kafka Connect’s log file should contain messages regarding execution of initia
 oc logs $(oc get pods -o name -l app=strimzi-connect-s2i)
 ----
 
-You can examine CDC messages in Kafka using the console consumer:
+You can examine CDC messages in Kafka using the console consumer (use Ctrl + C to exit the tool):
 
 [source]
 ----
@@ -404,7 +426,7 @@ oc new-app \
     centos/postgresql-95-centos7
 ----
 
-Once the database has started, register an instance of the Confluent JDBC sink connector:
+Once the database has started (use `oc get pods` to verify that Postgres is running), register an instance of the Confluent JDBC sink connector:
 
 [source]
 ----
@@ -439,14 +461,14 @@ only this part is extracted using Debezium's `UnwrapFromEnvelope` SMT (single me
 With the sink connector being set up, we can take a look into the Postgres database and see how the table changes are propgated there.
 Get a shell on the pod of the Postgres service:
 
-[source]
+[source,sh]
 ----
 oc rsh $(oc get pods -o name -l app=postgresql-95-centos7)
 ----
 
 Run a query to get all records from the table corresponding to the monitored topic:
 
-[source]
+[source,sh]
 ----
 psql -U postgresuser inventory -c 'select * from "dbserver1.inventory.Hike"'
 ----
@@ -524,10 +546,22 @@ This happens in the `WebSocketChangeEventHandler` class.
 All it then needs to do is to push all incoming events via WebSockets to all connected clients.
 For that purpose, the `ChangeEventsWebsocketEndpoint` class registers all clients with the event handler upon connection creation.
 
-Once deployed, visit the application in a new browser window:
+Wait until the s2i build has finished and the application is running
+(again this initial build will take a few minutes for downloading all required dependencies;
+note that by relying on https://access.redhat.com/documentation/en-us/openshift_container_platform/3.9/html/developer_guide/builds#source-to-image-strategy-options[incremental s2i builds], future build runs may be accelerated as the previously fetched dependencies would be re-used).
+
+[source,sh]
+oc get pods
+
+NAME                                          READY     STATUS    RESTARTS   AGE
+websocketsinkapp-1-build                      0/1       Completed   0          5m
+websocketsinkapp-1-hkxgb                      1/1       Running     0          3m
+...
+
+Once the application is running, visit it in a new browser window:
 
 [source]
-http://websocketsinkapp-default.<YOUR_IP>.xip.io/
+http://websocketsinkapp-l1099-kafka.apps-<GUID>.generic.opentlc.com/
 
 Modify some entries in the CRUD application and observe how the change events are propagated to the other browser window via WebSockets in near-realtime.
 
