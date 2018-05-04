@@ -27,12 +27,18 @@ First, connect via SSH to the workstation.
 The keys for connecting remotely to the workstation are already provisioned on your machine.
 
 [source, sh]
-$ ssh cloud-user@workstation-<GUID>.generic.opentlc.com
+$ ssh workstation-<GUID>.rhpds.opentlc.com
 
-Strimzi is already downloaded on your machine and available in the `strimzi` directory.
+Download Strimzi and extract it
 
 [source, sh]
-$ cd strimzi
+$ wget https://github.com/strimzi/strimzi/releases/download/0.3.0/strimzi-0.3.0.tar.gz
+$ tar xzvf strimzi-0.3.0.tar.gz
+
+Enter the `strimzi-0.3.0` directory.
+
+[source, sh]
+$ cd strimzi-0.3.0
 
 Log in as administrator to install Strimzi:
 # We will need to provide a better password for this, but I will not put it in GitHub for now
@@ -92,6 +98,8 @@ template "strimzi-ephemeral" created
 template "strimzi-persistent" created
 
 The Topic Controller related templates contain prededefined config map for easily create a new Kafka topic.
+
+[source,sh]
 $ oc create -f examples/templates/topic-controller
 template "strimzi-topic" created
 
