@@ -11,8 +11,13 @@ For example, you can deploy the cluster manually as a stateful set.
 While this can get you past the initial hurdle of starting the cluster, soon you have to start performing more complex tasks such as changing cluster topology, modifying configuration, or administering topics.
 These tasks typically require direct access to the cluster nodes and can easily become cumbersome.
 
-Strimzi simplifies these tasks by using a declarative approach to cluster and topic management, based on the controller pattern.
-Instead of relying on direct deployment and management of clusters, Strimzi consists of a couple of controllers that monitor the state of the cluster, making adjustments in accordance to a desired state read from dedicated ConfigMaps.
+==== Kubernetes Operators ====
+
+Strimzi simplifies these tasks by using a declarative approach to cluster and topic management, implemented as https://coreos.com/operators/[Kubernetes Operators].
+A Kubernetes Operator is an application-specific controller that extends the Kubernetes API to create, configure, and manage instances of complex stateful applications on behalf of a Kubernetes user.
+It builds upon the basic Kubernetes resource and controller concepts but includes domain or application-specific knowledge to automate common tasks.
+
+Instead of relying on direct deployment and management of clusters, Strimzi consists of a couple of these domain-specific controllers that monitor the state of the cluster, making adjustments in accordance to a desired state read from dedicated ConfigMaps.
 
 For creating an Apache Kafka cluster, for instance, you need to create a ConfigMap that describes the properties of the cluster, and the *_cluster controller_* will deploy the cluster for you.
 If you need to change the state of the cluster, for example for changing properties or for adding new instances, all you have to do is to modify the ConfigMap and the changes will be rolled out accordingly.
