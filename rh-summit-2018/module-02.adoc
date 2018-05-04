@@ -35,7 +35,7 @@ iot-temperature-max
 === Deploy the consumer application
 
 The consumer application uses Kafka client in order to get messages from the `iot-temperature-max` topic and showing them in a Web UI.
-It's deployed running following command :
+It's deployed by running following command :
 
 [source,sh]
 $ oc create -f https://raw.githubusercontent.com/strimzi/strimzi-lab/master/iot-demo/consumer-app/resources/consumer-app.yml

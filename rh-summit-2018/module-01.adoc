@@ -97,7 +97,7 @@ template "strimzi-connect" created
 template "strimzi-ephemeral" created
 template "strimzi-persistent" created
 
-The Topic Controller related templates contain prededefined config map for easily create a new Kafka topic.
+The Topic Controller related templates contain predefined config map for easily creating a new Kafka topic.
 
 [source,sh]
 $ oc create -f examples/templates/topic-controller
@@ -128,9 +128,9 @@ The expected output should be similar to:
         * Number of Kafka cluster nodes=3
         * Repository Name=strimzi
         * Kafka image Name=kafka
-        * Kafka image tag=0.2.0
+        * Kafka image tag=0.3.0
         * Zookeeper image Name=zookeeper
-        * Zookeeper image tag=0.2.0
+        * Zookeeper image tag=0.3.0
         * Zookeeper healthcheck initial delay=15
         * Zookeeper healthcheck timeout=5
         * Kafka healthcheck initial delay=15
@@ -159,7 +159,7 @@ data:
   KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "3"
   kafka-healthcheck-delay: "15"
   kafka-healthcheck-timeout: "5"
-  kafka-image: strimzi/kafka:0.2.0
+  kafka-image: strimzi/kafka:0.3.0
   kafka-metrics-config: |-
     {
       "lowercaseOutputName": true,
@@ -183,7 +183,7 @@ data:
   topic-controller-config: '{ }'
   zookeeper-healthcheck-delay: "15"
   zookeeper-healthcheck-timeout: "5"
-  zookeeper-image: strimzi/zookeeper::0.2.0
+  zookeeper-image: strimzi/zookeeper::0.3.0
   zookeeper-metrics-config: |-
     {
       "lowercaseOutputName": true
@@ -364,7 +364,7 @@ In the same way as before you can use the "edit" command and updating that value
 [source,sh]
 $ oc edit cm my-cluster
 
-This kind of update is much more complex because changing the Kafka broker configuration we want all the running brokers being update so it means that each broker needs to be restarted in order to get the new configuration.
+This kind of update is much more complex because changing the Kafka broker configuration we want all the running brokers to be updated so it means that each broker needs to be restarted in order to get the new configuration.
 In this case, detecting the config map update, the Cluster Controller starts a "rolling update" and each broker Pod is killed one by one and then restarted with the new configuration.
 
 When the "rolling update" is finished we can check that the default replication factor is changed to 2.
@@ -435,7 +435,7 @@ metadata:
 
 The properties of the map control the topic configuration.
 
-In order to check that the Topic Controller has dected the new config map and created a related topic in the Kafka cluster, we can run the official `kafka-topics.sh` tool on one of the brokers.
+In order to check that the Topic Controller has detected the new config map and created a related topic in the Kafka cluster, we can run the official `kafka-topics.sh` tool on one of the brokers.
 
 [source,sh]
 $ oc exec -it my-cluster-kafka-0 -- bin/kafka-topics.sh --zookeeper my-cluster-zookeeper:2181 --list
