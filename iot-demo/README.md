@@ -82,13 +82,6 @@ A route is provided in order to access the related Web UI.
 
 ![web ui](images/web_ui.png)
 
-It's also possible to avoid running the consumer Web UI application and instead running a Kafka console consumer on one 
-of the Pods of the deployed Kafka cluster.
-
-```
-oc exec -it my-cluster-kafka-0 -- bin/kafka-console-consumer.sh --bootstrap-server my-cluster-kafka:9092 --topic iot-temperature-max --from-beginning
-```
-
 ## Deploy the stream application
 
 The stream application uses Kafka Streams API reading from the `iot-temperature` topic, processing its values and then 
