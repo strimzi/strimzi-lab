@@ -40,8 +40,8 @@ Enter the `strimzi-0.3.0` directory.
 [source, sh]
 $ cd strimzi-0.3.0
 
-Log in as administrator to install Strimzi:
-# We will need to provide a better password for this, but I will not put it in GitHub for now
+Log in as administrator to install Strimzi
+(use the password provided by the lab instructors):
 
 [source,sh]
 $ oc login -u admin https://master.example.com:8443

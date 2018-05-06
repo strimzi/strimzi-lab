@@ -20,7 +20,7 @@ In the following you'll learn the following things:
 
 === Setting Up the Example Application
 
-We've prepared a small CRUD application which we'll use in the following as source of data change events.
+We've prepared a small CRUD application for managing hikes, which we'll use in the following as source of data change events.
 It is a Java EE application running on WildFly and using MySQL as its database.
 
 Start a MySQL instance by running:
@@ -41,18 +41,18 @@ oc new-app --name=hikingapp openshift/wildfly-120-centos7:latest~https://github.
     -e MYSQL_USER=mysqluser \
     -e MYSQL_DATASOURCE=HikingDS
 oc expose svc hikingapp
-
-# Make subsequent builds of the application executing faster
-oc patch bc/hikingapp -p '{"spec":{"strategy":{"sourceStrategy":{"incremental":true}}}}'
 ----
 
 Verify that the pods of the database and the application are running:
 
 [source,sh]
+----
 oc get pods
+----
 
-The s2i build will take some time, as it has to fetch all the required Maven dependencies and plug-ins.
-Once the build has completed, you should see the following status:
+The S2I build will take some time, as it has to fetch all the required Maven dependencies and plug-ins.
+Once the build has completed, you should see the following status
+(the build job must be "Completed", the actual application and the database "Running"):
 
 [source,sh]
 NAME                                          READY     STATUS    RESTARTS   AGE
@@ -61,12 +61,22 @@ hikingapp-1-m4rss                             1/1       Running     0          3
 mysql-2-gk8nw                                 1/1       Running     0          2m
 ...
 
+To improve execution time for subsequent builds (e.g. after code changes to the application),
+you can make the build an https://access.redhat.com/documentation/en-us/openshift_container_platform/3.9/html/developer_guide/builds#source-to-image-strategy-options[incremental S2I build], in which case the previously fetched dependencies would be re-used):
+
+[source,sh]
+----
+oc patch bc/hikingapp -p '{"spec":{"strategy":{"sourceStrategy":{"incremental":true}}}}'
+----
+
+
 The hostname of the exposed hikingapp service is available in the OpenShift console, or can be retrieved via CLI:
 
 [source]
 oc get routes hikingapp -o=jsonpath='{.spec.host}{"\n"}'
 
 Note the output, which should be in the format hikingapp-l1099-kafka.apps-<GUID>.generic.opentlc.com and you can navigate there using a browser.
+Alternatively, you could click on the application's URL within the OpenShift web UI.
 
 You can use "Populate Data" to create some example data (Click on "Search hikes" after that to see the created entries).
 Otherwise just insert a few records as you like.
@@ -91,18 +101,47 @@ oc new-app strimzi-connect-s2i \
     -p KAFKA_CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR=1 \
     -p KAFKA_CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR=1 \
     -p KAFKA_CONNECT_STATUS_STORAGE_REPLICATION_FACTOR=1
+----
 
+Use `oc status` to verify that the S2I process has finished
+(a deployement of `svc/debezium-connect` should be in state deployed):
+
+[source]
+----
+oc status
+----
+
+Then download the Debezium connector for MySQL as well as the Confluent JDBC sink connector and the Postgres database driver used by the latter.
+Extract the downloaded files and trigger another S2I build of `debezium-connect`, this time including these additional resources:
+
+[source,sh]
+----
 export DEBEZIUM_VERSION=0.7.5
 mkdir -p plugins && cd plugins && \
-for PLUGIN in {mongodb,mysql,postgres}; do \
-    curl http://central.maven.org/maven2/io/debezium/debezium-connector-$PLUGIN/$DEBEZIUM_VERSION/debezium-connector-$PLUGIN-$DEBEZIUM_VERSION-plugin.tar.gz | tar xz; \
-done && \
+curl http://central.maven.org/maven2/io/debezium/debezium-connector-mysql/$DEBEZIUM_VERSION/debezium-connector-mysql-$DEBEZIUM_VERSION-plugin.tar.gz | tar xz; \
 mkdir confluent-jdbc-sink && cd confluent-jdbc-sink && \
 curl -O http://central.maven.org/maven2/org/postgresql/postgresql/42.2.2/postgresql-42.2.2.jar && \
 curl -O http://packages.confluent.io/maven/io/confluent/kafka-connect-jdbc/3.3.0/kafka-connect-jdbc-3.3.0.jar && \
 cd .. && \
 oc start-build debezium-connect --from-dir=. --follow && \
-cd .. && rm -rf plugins
+cd ..
+----
+
+You should see an output like this:
+
+[source]
+----
+Uploading directory "." as binary input for the build ...
+build "debezium-connect-2" started
+Receiving source from STDIN as archive ...
+Assembling plugins into custom plugin directory /tmp/kafka-plugins
+Moving plugins to /tmp/kafka-plugins
+Pushing image docker-registry.default.svc:5000/l1099-kafka/debezium-connect:latest ...
+Pushed 6/9 layers, 67% complete
+Pushed 7/9 layers, 78% complete
+Pushed 8/9 layers, 89% complete
+Pushed 9/9 layers, 100% complete
+Push successful
 ----
 
 Use `oc get pods` again to verify that Kafka Connect is running:
@@ -377,7 +416,7 @@ The value's payload contains information of
 * the new state of the changed row (`after`)
 * metadata such as the table and database name, a timestamp etc.
 
-If you now use the web app to insert, update or delete records, you'll see how corresponding CDC messages arrive in the topic.
+If you now use the web app to insert, update or delete records while keeping the console consumer running, you'll see how corresponding CDC messages arrive in the topic.
 
 Using the Kafka Connect REST API, you also can query the list of connectors, query the status of a given connector, delete a connector and more:
 
@@ -401,7 +440,7 @@ oc exec -i my-cluster-kafka-0 -- curl -s -X GET \
 
 [source]
 ----
-# Delete "inventory-connector"
+# Delete "inventory-connector" (don't run it, as we'll still need the connector in the following)
 oc exec -i my-cluster-kafka-0 -- curl -s -X DELETE \
     -H "Accept:application/json" \
     -H "Content-Type:application/json" \
@@ -556,9 +595,8 @@ This happens in the `WebSocketChangeEventHandler` class.
 All it then needs to do is to push all incoming events via WebSockets to all connected clients.
 For that purpose, the `ChangeEventsWebsocketEndpoint` class registers all clients with the event handler upon connection creation.
 
-Wait until the s2i build has finished and the application is running
-(again this initial build will take a few minutes for downloading all required dependencies;
-note that by relying on https://access.redhat.com/documentation/en-us/openshift_container_platform/3.9/html/developer_guide/builds#source-to-image-strategy-options[incremental s2i builds], future build runs may be accelerated as the previously fetched dependencies would be re-used).
+Wait until the S2I build has finished and the application is running
+(again this initial build will take a few minutes for downloading all required dependencies, while future incremental ones will be faster).
 
 [source,sh]
 oc get pods
