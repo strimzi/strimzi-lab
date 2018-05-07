@@ -277,8 +277,7 @@ The hostname of the service is available in the OpenShift console, or can be ret
 [source,sh]
 $ oc get routes grafana -o=jsonpath='{.spec.host}{"\n"}'
 
-Note the output, which should be in the format `grafana-l1099-kafka.<IP-ADDRESS>.xip.io` (the actual IP will vary from environment to environment).
-You will be able to access the Grafana UI at `http://grafana-l1099-kafka.<IP-ADDRESS>.xip.io`
+Note the output, which should be in the format `grafana-l1099-kafka.apps-<GUID>.generic.opentlc.com/` and access the Grafana UI at that URL in your browser.
 Now we can set up the Prometheus data source and the Kafka dashboard.
 
 Access to the Grafana UI using `admin/admin` credentials.
