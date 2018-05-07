@@ -26,28 +26,28 @@ It is a Java EE application running on WildFly and using MySQL as its database.
 Start a MySQL instance by running:
 
 [source, sh]
-oc new-app --name=mysql debezium/example-mysql:0.7
-oc env dc/mysql MYSQL_ROOT_PASSWORD=debezium MYSQL_USER=mysqluser MYSQL_PASSWORD=mysqlpw
+$ oc new-app --name=mysql debezium/example-mysql:0.7
+$ oc env dc/mysql MYSQL_ROOT_PASSWORD=debezium MYSQL_USER=mysqluser MYSQL_PASSWORD=mysqlpw
 
 Then build and start the application.
 This uses the https://github.com/openshift-s2i/s2i-wildfly[WildFly S2I] ("source to image") builder image which will fetch the application's source code from the given location, build it using Maven and deploy it to WildFly, setting up a MySQL datasource using the given credentials:
 
 [source,sh]
 ----
-oc new-app --name=hikingapp openshift/wildfly-120-centos7:latest~https://github.com/strimzi/strimzi-lab.git \
+$ oc new-app --name=hikingapp openshift/wildfly-120-centos7:latest~https://github.com/strimzi/strimzi-lab.git \
     --context-dir=hiking-demo \
     -e MYSQL_DATABASE=inventory \
     -e MYSQL_PASSWORD=mysqlpw \
     -e MYSQL_USER=mysqluser \
     -e MYSQL_DATASOURCE=HikingDS
-oc expose svc hikingapp
+$ oc expose svc hikingapp
 ----
 
 Verify that the pods of the database and the application are running:
 
 [source,sh]
 ----
-oc get pods
+$ oc get pods
 ----
 
 The S2I build will take some time, as it has to fetch all the required Maven dependencies and plug-ins.
@@ -66,14 +66,14 @@ you can make the build an https://access.redhat.com/documentation/en-us/openshif
 
 [source,sh]
 ----
-oc patch bc/hikingapp -p '{"spec":{"strategy":{"sourceStrategy":{"incremental":true}}}}'
+$ oc patch bc/hikingapp -p '{"spec":{"strategy":{"sourceStrategy":{"incremental":true}}}}'
 ----
 
 
 The hostname of the exposed hikingapp service is available in the OpenShift console, or can be retrieved via CLI:
 
 [source]
-oc get routes hikingapp -o=jsonpath='{.spec.host}{"\n"}'
+$ oc get routes hikingapp -o=jsonpath='{.spec.host}{"\n"}'
 
 Note the output, which should be in the format hikingapp-l1099-kafka.apps-<GUID>.generic.opentlc.com and you can navigate there using a browser.
 Alternatively, you could click on the application's URL within the OpenShift web UI.
@@ -95,7 +95,7 @@ This makes it very easy to create a Kafka Connect cluster with additional connec
 
 [source]
 ----
-oc new-app strimzi-connect-s2i \
+$ oc new-app strimzi-connect-s2i \
     -p CLUSTER_NAME=debezium \
     -p KAFKA_CONNECT_BOOTSTRAP_SERVERS=my-cluster-kafka:9092 \
     -p KAFKA_CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR=1 \
@@ -108,7 +108,7 @@ Use `oc status` to verify that the S2I process has finished
 
 [source]
 ----
-oc status
+$ oc status
 ----
 
 Then download the Debezium connector for MySQL as well as the Confluent JDBC sink connector and the Postgres database driver used by the latter.
@@ -148,7 +148,7 @@ Use `oc get pods` again to verify that Kafka Connect is running:
 
 [source,sh]
 ----
-oc get pods
+$ oc get pods
 
 NAME                                          READY     STATUS    RESTARTS   AGE
 debezium-connect-2-mpscv                      1/1       Running     0          1m
@@ -159,7 +159,7 @@ Once that's the case, register an instance of the Debezium MySQL connector using
 
 [source]
 ----
-oc exec -i my-cluster-kafka-0 -- curl -s -X POST \
+$ oc exec -i my-cluster-kafka-0 -- curl -s -X POST \
     -H "Accept:application/json" \
     -H "Content-Type:application/json" \
     http://debezium-connect:8083/connectors -d @- <<'EOF'
@@ -191,14 +191,14 @@ Kafka Connect’s log file should contain messages regarding execution of initia
 
 [source]
 ----
-oc logs $(oc get pods -o name -l app=strimzi-connect-s2i)
+$ oc logs $(oc get pods -o name -l app=strimzi-connect-s2i)
 ----
 
 You can examine CDC messages in Kafka using the console consumer (use Ctrl + C to exit the tool):
 
 [source]
 ----
-oc exec -it my-cluster-kafka-0 -- /opt/kafka/bin/kafka-console-consumer.sh \
+$ oc exec -it my-cluster-kafka-0 -- /opt/kafka/bin/kafka-console-consumer.sh \
    --bootstrap-server localhost:9092 \
    --from-beginning \
    --property print.key=true \
@@ -423,7 +423,7 @@ Using the Kafka Connect REST API, you also can query the list of connectors, que
 [source]
 ----
 # List all connectors
-oc exec -i my-cluster-kafka-0 -- curl -s -X GET \
+$ oc exec -i my-cluster-kafka-0 -- curl -s -X GET \
     -H "Accept:application/json" \
     -H "Content-Type:application/json" \
     http://debezium-connect:8083/connectors
@@ -432,7 +432,7 @@ oc exec -i my-cluster-kafka-0 -- curl -s -X GET \
 [source]
 ----
 # Get status of "inventory-connector"
-oc exec -i my-cluster-kafka-0 -- curl -s -X GET \
+$ oc exec -i my-cluster-kafka-0 -- curl -s -X GET \
     -H "Accept:application/json" \
     -H "Content-Type:application/json" \
     http://debezium-connect:8083/connectors/inventory-connector/status
@@ -441,7 +441,7 @@ oc exec -i my-cluster-kafka-0 -- curl -s -X GET \
 [source]
 ----
 # Delete "inventory-connector" (don't run it, as we'll still need the connector in the following)
-oc exec -i my-cluster-kafka-0 -- curl -s -X DELETE \
+$ oc exec -i my-cluster-kafka-0 -- curl -s -X DELETE \
     -H "Accept:application/json" \
     -H "Content-Type:application/json" \
     http://debezium-connect:8083/connectors/inventory-connector
@@ -465,7 +465,7 @@ So let's set up another database (Postgres in this case) and stream the data cha
 
 [source]
 ----
-oc new-app \
+$ oc new-app \
     -e POSTGRESQL_USER=postgresuser \
     -e POSTGRESQL_PASSWORD=postgrespw \
     -e POSTGRESQL_DATABASE=inventory \
@@ -476,7 +476,7 @@ Once the database has started (use `oc get pods` to verify that Postgres is runn
 
 [source]
 ----
-oc exec -i my-cluster-kafka-0 -- curl -X POST \
+$ oc exec -i my-cluster-kafka-0 -- curl -X POST \
     -H "Accept:application/json" \
     -H "Content-Type:application/json" \
     http://debezium-connect:8083/connectors -d @- <<'EOF'
@@ -509,7 +509,7 @@ Get a shell on the pod of the Postgres service:
 
 [source,sh]
 ----
-oc rsh $(oc get pods -o name -l app=postgresql-95-centos7)
+$ oc rsh $(oc get pods -o name -l app=postgresql-95-centos7)
 ----
 
 Run a query to get all records from the table corresponding to the monitored topic:
@@ -535,7 +535,7 @@ Scale down the pods of the "strimzi-connect-s2i" application to 0:
 
 [source]
 ----
-oc scale --replicas=0 dc/debezium-connect
+$ oc scale --replicas=0 dc/debezium-connect
 ----
 
 You'll still be able to edit records in the source application,
@@ -547,7 +547,7 @@ you'll see all changes that had occurred in the connector's downtime in the sink
 
 [source]
 ----
-oc scale --replicas=1 dc/debezium-connect
+$ oc scale --replicas=1 dc/debezium-connect
 ----
 
 ==== Consuming Data Change Events With WildFly Swarm
@@ -564,7 +564,7 @@ Again we're using an S2I process for building and deploying the application:
 
 [source,sh]
 ----
-oc new-app --name=websocketsinkapp fabric8/s2i-java:latest~https://github.com/strimzi/strimzi-lab.git \
+$ oc new-app --name=websocketsinkapp fabric8/s2i-java:latest~https://github.com/strimzi/strimzi-lab.git \
     --context-dir=debezium-swarm-demo \
     -e MYSQL_DATABASE=inventory \
     -e AB_PROMETHEUS_OFF=true \
@@ -572,7 +572,7 @@ oc new-app --name=websocketsinkapp fabric8/s2i-java:latest~https://github.com/st
     -e KAFKA_SERVICE_PORT=9092
 
 # Make subsequent builds of the application executing faster
-oc patch bc/websocketsinkapp -p '{"spec":{"strategy":{"sourceStrategy":{"incremental":true}}}}'
+$ oc patch bc/websocketsinkapp -p '{"spec":{"strategy":{"sourceStrategy":{"incremental":true}}}}'
 ----
 
 In this case we're using the https://hub.docker.com/r/fabric8/s2i-java/[Java S2I image] provided by the fabric8 project.
@@ -584,9 +584,9 @@ To do so, use `oc patch` and expose a route for the service like so:
 
 [source]
 ----
-oc patch service websocketsinkapp -p '{ "spec" : { "ports" : [{ "name" : "8080-tcp", "port" : 8080, "protocol" : "TCP", "targetPort" : 8080 }] } } }'
+$ oc patch service websocketsinkapp -p '{ "spec" : { "ports" : [{ "name" : "8080-tcp", "port" : 8080, "protocol" : "TCP", "targetPort" : 8080 }] } } }'
 
-oc expose svc websocketsinkapp
+$ oc expose svc websocketsinkapp
 ----
 
 To consume the Debezium CDC events from the Kafka topic,
@@ -599,7 +599,7 @@ Wait until the S2I build has finished and the application is running
 (again this initial build will take a few minutes for downloading all required dependencies, while future incremental ones will be faster).
 
 [source,sh]
-oc get pods
+$ oc get pods
 
 NAME                                          READY     STATUS    RESTARTS   AGE
 websocketsinkapp-1-build                      0/1       Completed   0          5m
