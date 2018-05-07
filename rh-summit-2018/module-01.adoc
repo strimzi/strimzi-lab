@@ -443,15 +443,9 @@ The properties of the map control the topic configuration.
 In order to check that the Topic Controller has detected the new config map and created a related topic in the Kafka cluster, we can run the official `kafka-topics.sh` tool on one of the brokers.
 
 [source,sh]
-$ oc exec -it my-cluster-kafka-0 -- bin/kafka-topics.sh --zookeeper my-cluster-zookeeper:2181 --list
-my-topic
-
-We can also describing it for getting more information.
-
-[source,sh]
-$ oc exec -it my-cluster-kafka-0 -- bin/kafka-topics.sh --zookeeper my-cluster-zookeeper:2181 --describe --topic my-topic
+$ oc exec -it my-cluster-kafka-0 -- bin/kafka-topics.sh --zookeeper my-cluster-zookeeper:2181 --describe
 Topic:my-topic	PartitionCount:1	ReplicationFactor:1	Configs:
-	Topic: my-topic	Partition: 0	Leader: 1	Replicas: 1	Isr: 1
+	Topic: my-topic	Partition: 0	Leader: 0	Replicas: 0	Isr: 0
 
 Let's increase the partitions number now.
 It's possible just updating the related config map and changing the `partitions` data field from 1 to 3, for example using the "edit" command provided by the `oc` tool.
@@ -463,7 +457,7 @@ The Topic Controller detects this update and updates the related Kafka topic acc
 We can check that describing the topic one more time.
 
 [source,sh]
-$ oc exec -it my-cluster-kafka-0 -- bin/kafka-topics.sh --zookeeper my-cluster-zookeeper:2181 --describe --topic my-topic
+$ oc exec -it my-cluster-kafka-0 -- bin/kafka-topics.sh --zookeeper my-cluster-zookeeper:2181 --describe
 Topic:my-topic	PartitionCount:3	ReplicationFactor:1	Configs:
 	Topic: my-topic	Partition: 0	Leader: 1	Replicas: 1	Isr: 1
 	Topic: my-topic	Partition: 1	Leader: 2	Replicas: 2	Isr: 2
