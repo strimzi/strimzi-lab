@@ -18,6 +18,10 @@ In the following you'll learn the following things:
 ** Streaming data changes to a Postgres sink database
 ** Programmatically consuming change events using WildFly Swarm and CDI and streaming them to a web browser via WebSockets
 
+The overall architecture of this part of the lab looks like this:
+
+image::debezium-demo.png[debezium-demo]
+
 === Setting Up the Example Application
 
 We've prepared a small CRUD application for managing hikes, which we'll use in the following as source of data change events.
