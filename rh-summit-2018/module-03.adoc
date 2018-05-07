@@ -104,12 +104,14 @@ $ oc new-app strimzi-connect-s2i \
 ----
 
 Use `oc status` to verify that the S2I process has finished
-(a deployement of `svc/debezium-connect` should be in state deployed):
+(a deployment of `svc/debezium-connect` should be in state deployed):
 
 [source]
 ----
 $ oc status
 ----
+
+Alternatively, you can check in the OpenShift web UI that the rolling deployment for "debezium-connect" has finished.
 
 Then download the Debezium connector for MySQL as well as the Confluent JDBC sink connector and the Postgres database driver used by the latter.
 Extract the downloaded files and trigger another S2I build of `debezium-connect`, this time including these additional resources:
@@ -151,7 +153,7 @@ Use `oc get pods` again to verify that Kafka Connect is running:
 $ oc get pods
 
 NAME                                          READY     STATUS    RESTARTS   AGE
-debezium-connect-2-mpscv                      1/1       Running     0          1m
+debezium-connect-3-mpscv                      1/1       Running     0          1m
 ...
 ----
 
@@ -187,7 +189,7 @@ This sets up an instance of Debezium's `io.debezium.connector.mysql.MySqlConnect
 using the given credentials.
 By specifying the `database.whitelist` option (or, on a more fine-grained level, `table.whitelist`), we can narrow down the set of captured tables.
 
-Kafka Connect’s log file should contain messages regarding execution of initial snapshot:
+Kafka Connect’s log file should contain messages regarding execution of initial snapshot (look for log messages like "INFO Step 1 ..."):
 
 [source]
 ----
@@ -591,9 +593,9 @@ $ oc expose svc websocketsinkapp
 
 To consume the Debezium CDC events from the Kafka topic,
 the application uses a https://github.com/aerogear/kafka-cdi[kafka-cdi], a CDI portable extension provided by the AeroGear project.
-This happens in the `WebSocketChangeEventHandler` class.
+This happens in the https://github.com/strimzi/strimzi-lab/blob/master/debezium-swarm-demo/src/main/java/com/example/dbzdemo/ws/WebSocketChangeEventHandler.java[WebSocketChangeEventHandler] class.
 All it then needs to do is to push all incoming events via WebSockets to all connected clients.
-For that purpose, the `ChangeEventsWebsocketEndpoint` class registers all clients with the event handler upon connection creation.
+For that purpose, the https://github.com/strimzi/strimzi-lab/blob/master/debezium-swarm-demo/src/main/java/com/example/dbzdemo/ws/ChangeEventsWebsocketEndpoint.java[ChangeEventsWebsocketEndpoint] class registers all clients with the event handler upon connection creation.
 
 Wait until the S2I build has finished and the application is running
 (again this initial build will take a few minutes for downloading all required dependencies, while future incremental ones will be faster).
@@ -606,10 +608,12 @@ websocketsinkapp-1-build                      0/1       Completed   0          5
 websocketsinkapp-1-hkxgb                      1/1       Running     0          3m
 ...
 
-Once the application is running, visit it in a new browser window:
+Once the application is running, get its URL by executing:
 
 [source]
-http://websocketsinkapp-l1099-kafka.apps-<GUID>.generic.opentlc.com/
+$ oc get routes websocketsinkapp -o=jsonpath='{.spec.host}{"\n"}'
+
+Open that URL in a browser, it should be in the form http://websocketsinkapp-l1099-kafka.apps-<GUID>.generic.opentlc.com/.
 
 Modify some entries in the CRUD application and observe how the change events are propagated to the other browser window via WebSockets in near-realtime.
 
