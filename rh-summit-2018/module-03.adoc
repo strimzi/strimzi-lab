@@ -10,7 +10,7 @@ Streaming data changes from your database enables many interesting use cases suc
 * Updating fulltext search indexes (e.g. Elasticsearch) or caches (e.g. JBoss Data Grid)
 * Running stream queries such as sliding averages of the value of incoming orders etc.
 
-In the following you'll learn the following things:
+In the module of the lab you'll learn the following things:
 
 * Setting up Kafka Connect with the Debezium CDC connectors
 * Setting up the Debezium MySQL connector, ingesting changes from an existing example CRUD application
@@ -18,7 +18,7 @@ In the following you'll learn the following things:
 ** Streaming data changes to a Postgres sink database
 ** Programmatically consuming change events using WildFly Swarm and CDI and streaming them to a web browser via WebSockets
 
-The overall architecture of this part of the lab looks like this:
+The overall architecture of this lab module looks like this:
 
 image::debezium-demo.png[debezium-demo]
 
@@ -585,12 +585,14 @@ Wait until the S2I build has finished and the application is running
 (again this initial build will take a few minutes for downloading all required dependencies, while future incremental ones will be faster).
 
 [source,sh]
+----
 $ oc get pods
 
 NAME                                          READY     STATUS    RESTARTS   AGE
 websocketsinkapp-1-build                      0/1       Completed   0          5m
 websocketsinkapp-1-hkxgb                      1/1       Running     0          3m
 ...
+----
 
 Once the application is running, get its URL by executing:
 
