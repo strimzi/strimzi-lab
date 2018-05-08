@@ -2,18 +2,18 @@
 
 This part of the lab introduces you to change data capture (CDC) using http://debezium.io/[Debezium].
 Debezium allows you to capture data changes from MySQL, Postgres and MongoDB and stream those events into Apache Kafka.
-It is based on Kafka Connect.
+It is based on https://kafka.apache.org/documentation/#connect[Kafka Connect].
 Streaming data changes from your database enables many interesting use cases such as
 
-* Replication of data across databases by different vendors
+* Replicating data across databases by different vendors
 * Synchronizing data between microservices
-* Updating fulltext search indexes (e.g. Elasticsearch) or caches (e.g. JBoss Data Grid)
+* Updating fulltext search indexes (e.g. Elasticsearch) or caches (e.g. https://www.redhat.com/de/technologies/jboss-middleware/data-grid[JBoss Data Grid])
 * Running stream queries such as sliding averages of the value of incoming orders etc.
 
-In the module of the lab you'll learn the following things:
+In this module of the lab you'll learn the following things:
 
-* Setting up Kafka Connect with the Debezium CDC connectors
-* Setting up the Debezium MySQL connector, ingesting changes from an existing example CRUD application
+* Setting up Kafka Connect with the Debezium CDC connector for MySQL
+* Configuring an instance of that connector, ingesting changes from an existing example CRUD application
 * Different ways of processing change data events
 ** Streaming data changes to a Postgres sink database
 ** Programmatically consuming change events using WildFly Swarm and CDI and streaming them to a web browser via WebSockets
@@ -24,7 +24,7 @@ image::debezium-demo.png[debezium-demo]
 
 === Setting Up the Example Application
 
-We've prepared a small CRUD application for managing hikes, which we'll use in the following as source of data change events.
+We've prepared a small https://github.com/strimzi/strimzi-lab/tree/master/hiking-demo[CRUD application for managing hikes], which we'll use in the following as source of data change events.
 It is a Java EE application running on WildFly and using MySQL as its database.
 
 Start a MySQL instance by running:
@@ -87,7 +87,7 @@ Otherwise just insert a few records as you like.
 
 === Setting Up Kafka Connect With the Debezium Connectors
 
-Now it's time to deploy https://kafka.apache.org/documentation/#connect[Kafka Connect] and Debezium.
+Now it's time to deploy Kafka Connect and Debezium.
 Kafka Connect is a platform for streaming data between Apache Kafka and other systems.
 It provides a framework and runtime environment for _source connectors_ (for getting data into Kafka)
 and _sink connectors_ (for getting data out of Kafka).
@@ -195,7 +195,7 @@ By specifying the `database.whitelist` option (or, on a more fine-grained level,
 
 Kafka Connect’s log file should contain messages regarding execution of initial snapshot (look for log messages like "INFO Step 1 ..."):
 
-[source]
+[source,sh]
 ----
 $ oc logs $(oc get pods -o name -l app=strimzi-connect-s2i)
 ----
@@ -211,6 +211,7 @@ $ oc exec -it my-cluster-kafka-0 -- /opt/kafka/bin/kafka-console-consumer.sh \
    --topic dbserver1.inventory.Hike
 ----
 
+The topic name follows the pattern "<db server name>.<db name>.<table name>".
 You should see messages comprising of a key and a value like the following (formatted for the sake readability),
 representing the `Hike` records as per the initial snapshot.
 
@@ -576,7 +577,7 @@ $ oc expose svc websocketsinkapp
 ----
 
 To consume the Debezium CDC events from the Kafka topic,
-the application uses a https://github.com/aerogear/kafka-cdi[kafka-cdi], a CDI portable extension provided by the AeroGear project.
+the application uses https://github.com/aerogear/kafka-cdi[kafka-cdi], a CDI portable extension provided by the AeroGear project.
 This happens in the https://github.com/strimzi/strimzi-lab/blob/master/debezium-swarm-demo/src/main/java/com/example/dbzdemo/ws/WebSocketChangeEventHandler.java[WebSocketChangeEventHandler] class.
 All it then needs to do is to push all incoming events via WebSockets to all connected clients.
 For that purpose, the https://github.com/strimzi/strimzi-lab/blob/master/debezium-swarm-demo/src/main/java/com/example/dbzdemo/ws/ChangeEventsWebsocketEndpoint.java[ChangeEventsWebsocketEndpoint] class registers all clients with the event handler upon connection creation.
