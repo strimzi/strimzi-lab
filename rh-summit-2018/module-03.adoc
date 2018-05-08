@@ -536,26 +536,6 @@ To leave the shell on the Postgres pod, run:
 exit
 ----
 
-As an experiment, you also can explore how the streaming approach ensures a loose coupling of the involved components.
-Scale down the pods of the "strimzi-connect-s2i" application to 0:
-
-[source]
-----
-$ oc scale --replicas=0 dc/debezium-connect
-----
-
-You'll still be able to edit records in the source application,
-but as Kafka Connect - and with it Debezium - isn't running,
-the changes won't be propagated to the sink database.
-
-Once Kafka Connect is restarted again, the connector will automatically pick up where it left before and after a while,
-you'll see all changes that had occurred in the connector's downtime in the sink database:
-
-[source]
-----
-$ oc scale --replicas=1 dc/debezium-connect
-----
-
 ==== Consuming Data Change Events With WildFly Swarm
 
 Finally, let's explore how to consume the Debezium events in a custom application and forward them to a web UI using WebSockets.
