@@ -2,7 +2,7 @@
 
 The IoT demo is made by different components with the following architecture :
 
-image::iot-demo.png[iot-demo]
+image::/images/iot-demo.png[iot-demo]
 
 * one or more device simulators which sends temperature values to the `iot-temperature` topic;
 * a stream application which uses Kafka Streams API in order to get data from the `iot-temperature` topic and process them to compute the maximum value (for each device) in the last 5 seconds; it writes the results to the `iot-temperature-max` topic;
@@ -19,7 +19,7 @@ Running the following command, a file containing two topic ConfigMaps is deploye
 [source,sh]
 $ oc create -f https://raw.githubusercontent.com/strimzi/strimzi-lab/master/iot-demo/stream-app/resources/topics.yml
 
-image::topics.png[topics]
+image::/images/topics.png[topics]
 
 In order to check that the topics are properly created on the Kafka cluster, it's possible to use the `kafka-topics.sh` script (distributed with Kafka) running it on one of the broker.
 
@@ -42,9 +42,9 @@ $ oc create -f https://raw.githubusercontent.com/strimzi/strimzi-lab/master/iot-
 
 A route is provided in order to access the related Web UI.
 
-image::route.png[route]
+image::/images/route.png[route]
 
-image::web_ui.png[web ui]
+image::/images/web_ui.png[web ui]
 
 === Deploy the stream application
 
@@ -63,16 +63,16 @@ $ oc create -f https://raw.githubusercontent.com/strimzi/strimzi-lab/master/iot-
 
 Once deployed, it starts just one pod simulating one device.
 
-image::one_device_gauge.png[one device gauge]
+image::/images/one_device_gauge.png[one device gauge]
 
 it's possible to scale up the number of pods in order to simulate more devices sending temperature values (each one with a different and randomly generated id).
 
-image::scale_up_device.png[scale up device]
+image::/images/scale_up_device.png[scale up device]
 
 Opening the consumer Web UI it's possible to see the "gauges" charts showing the processed max temperature values for all the active devices on the left side.
 The right side is useful to see the log of the incoming messages from devices, showing the device id alongside the max temperature value processed by the stream application for such a device.
 
-image::more_device_gauges.png[more device gauges]
+image::/images/more_device_gauges.png[more device gauges]
 
 === Clean up
 
