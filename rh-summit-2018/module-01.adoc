@@ -282,29 +282,29 @@ Now we can set up the Prometheus data source and the Kafka dashboard.
 
 Access to the Grafana UI using `admin/admin` credentials.
 
-image::grafana_login.png[grafana login]
+image::images/grafana_login.png[grafana login]
 
 Click on the "Add data source" button from the Grafana home in order to add Prometheus as data source.
 
-image::grafana_home.png[grafana home]
+image::images/grafana_home.png[grafana home]
 
 Fill in the information about the Prometheus data source, specifying a name and "Prometheus" as type.
 In the URL field, use `http://prometheus:9090` as the URL to the Prometheus server.
 After "Add" is clicked, Grafana will test the connection to the data source.
 
-image::grafana_prometheus_data_source.png[grafana prometheus data source]
+image::images/grafana_prometheus_data_source.png[grafana prometheus data source]
 
 From the top left menu, click on "Dashboards" and then "Import" to open the "Import Dashboard" window.
 Open a browser tab and navigate to `https://raw.githubusercontent.com/strimzi/strimzi/0.3.0/metrics/examples/grafana/kafka-dashboard.json`.
 You should see JSON content as response.
 Copy and paste it in the appropriate field in the form.
 
-image::grafana_import_dashboard.png[grafana import dashboard]
+image::images/grafana_import_dashboard.png[grafana import dashboard]
 
 After importing the dashboard, the Grafana home should show with some initial metrics about CPU and JVM memory usage.
 When the Kafka cluster is used (creating topics and exchanging messages) the other metrics, like messages in and bytes in/out per topic, will be shown.
 
-image::grafana_kafka_dashboard.png[grafana kafka dashboard]
+image::images/grafana_kafka_dashboard.png[grafana kafka dashboard]
 
 === Handling cluster and topics
 
