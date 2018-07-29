@@ -17,8 +17,8 @@ As described in the official documentation, to deploy the Cluster Controller on 
 should be executed:
 
 ```
-oc create -f examples/install/cluster-controller
-oc create -f examples/templates/cluster-controller
+oc create -f examples/install/cluster-operator
+oc create -f examples/templates/cluster-operator
 ```
 
 > NOTE : the current user needs to have the rights for creating service accounts in the cluster. The simpler way for that 
