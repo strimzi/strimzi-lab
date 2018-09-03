@@ -20,7 +20,7 @@ In this module of the lab you'll learn the following things:
 
 The overall architecture of this lab module looks like this:
 
-image::debezium-demo.png[debezium-demo]
+image::images/debezium-demo.png[debezium-demo]
 
 === Setting Up the Example Application
 

@@ -1,25 +1,25 @@
-apiVersion: v1
-kind: ConfigMap
+apiVersion: kafka.strimzi.io/v1alpha1
+kind: KafkaTopic
 metadata:
   name: iot-temperature
   labels:
-    app: iot-demo
-    strimzi.io/kind: topic
     strimzi.io/cluster: my-cluster
-data:
-  name: iot-temperature
-  partitions: "3"
-  replicas: "1"
+spec:
+  partitions: 3
+  replicas: 1
+  config:
+    retention.ms: 7200000
+    segment.bytes: 1073741824
 ---
-apiVersion: v1
-kind: ConfigMap
+apiVersion: kafka.strimzi.io/v1alpha1
+kind: KafkaTopic
 metadata:
   name: iot-temperature-max
   labels:
-    app: iot-demo
-    strimzi.io/kind: topic
     strimzi.io/cluster: my-cluster
-data:
-  name: iot-temperature-max
-  partitions: "1"
-  replicas: "1"
+spec:
+  partitions: 1
+  replicas: 1
+  config:
+    retention.ms: 7200000
+    segment.bytes: 1073741824
