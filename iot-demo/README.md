@@ -2,7 +2,7 @@ You can find [here](https://youtu.be/MljQnXZE1oY) a video of this demo running.
 
 # Prerequisites
 
-In order to run this demo, an OpenShift running cluster is needed. If you don't have it, you can use the oc tools from 
+In order to run this demo, an OpenShift running cluster is needed. If you don't have it, you can use the `oc` tools from 
 [here](https://github.com/openshift/origin/releases) running the `oc cluster up` command or MiniShift from 
 [here](https://github.com/minishift/minishift) running `minishift start`.
 
@@ -10,28 +10,27 @@ In order to run this demo, an OpenShift running cluster is needed. If you don't 
 
 The needed Kafka cluster is deployed on OpenShift using the [Strimzi](http://strimzi.io/) project.
 
-## The Cluster Controller
+## The Cluster Operator
 
 Download the latest Strimzi release from [here](https://github.com/strimzi/strimzi/releases) and unpack it.
-As described in the official documentation, to deploy the Cluster Controller on OpenShift, the following commands 
+As described in the official documentation, to deploy the Cluster Operator on OpenShift, the following commands 
 should be executed:
 
 ```
-oc create -f examples/install/cluster-controller
-oc create -f examples/templates/cluster-controller
+oc apply -f install/cluster-operator/
 ```
 
-> NOTE : the current user needs to have the rights for creating service accounts in the cluster. The simpler way for that 
-is to login as a system administrator with command `oc login -u system:admin`
+> NOTE : the current user must have the rights to manage role-based access control (RBAC) and install Custome Resource Definitions (CRDs).
+The simpler way for that is to login as a system administrator with command `oc login -u system:admin`
 
-## The Kafka cluster and the Topic Controller
+## The Kafka cluster
 
-In order to deploy a Kafka cluster, the provided template can be used. For this demo, running the `ephemeral` one is enough.
+In order to deploy a Kafka cluster, the provided examples can be used. For this demo, running the `ephemeral` one is enough.
 More information about that can be found on the official Strimzi documentation.
-The following command will deploy such a cluster and the Topic Controller with the default configuration.
+The following command will deploy such a cluster alongside with the Entity Operator which runs Topic and User Operators with the default configuration.
 
 ```
-oc new-app strimzi-ephemeral
+oc apply -f examples/kafka/kafka-ephemeral.yaml
 ```
 
 # Deploy the applications
@@ -42,12 +41,12 @@ This demo uses a couple of topics. The first one named `iot-temperature` is used
 temperature values and by the stream application for getting such values and processing them. The second one is the 
 `iot-temperature-max` topic where the stream application puts the max temperature value processed in the specified time 
 window.
-In order to create these topics in the Kafka cluster, the Topic Controller can be used. Running the following command, a 
+In order to create these topics in the Kafka cluster, the Topic Operator can be used. Running the following command, a 
 file containing two topic ConfigMaps is deployed to the OpenShift cluster and used by the Topic Controller for creating 
 such topics.
 
 ```
-oc create -f ./stream-app/resources/topics.yml
+oc apply -f ./stream-app/resources/topics.yml
 ```
 
 ![topics](images/topics.png)
@@ -56,7 +55,7 @@ In order to check that the topics are properly created on the Kafka cluster, it'
 (distributed with Kafka) running it on one of the broker.
 
 ```
-oc exec -it my-cluster-kafka-0 -- bin/kafka-topics.sh --zookeeper my-cluster-zookeeper:2181 --list
+oc exec -it my-cluster-kafka-0 -c kafka -- bin/kafka-topics.sh --zookeeper localhost:2181 --list
 ```
 
 The output of the above command should be something like the following showing the created topics.
@@ -123,8 +122,8 @@ If you want it could be useful to clean up the current deployment deleting all t
 oc delete all -l app=iot-demo
 ```
 
-And finally the topic config maps
+And finally the `KafkaTopic` resources.
 
 ```
-oc delete cm -l strimzi.io/kind=topic
+oc delete kafkatopics --all
 ```
