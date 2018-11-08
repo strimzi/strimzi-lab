@@ -49,7 +49,11 @@ such topics.
 oc apply -f ./stream-app/resources/topics.yml
 ```
 
-![topics](images/topics.png)
+To check that the topics are created as `KafkaTopic` resources.
+
+```
+oc get kafkatopics
+```
 
 In order to check that the topics are properly created on the Kafka cluster, it's possible to use the `kafka-topics.sh` script 
 (distributed with Kafka) running it on one of the broker.
