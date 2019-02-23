@@ -42,7 +42,7 @@ temperature values and by the stream application for getting such values and pro
 `iot-temperature-max` topic where the stream application puts the max temperature value processed in the specified time 
 window.
 In order to create these topics in the Kafka cluster, the Topic Operator can be used. Running the following command, a 
-file containing two topic ConfigMaps is deployed to the OpenShift cluster and used by the Topic Controller for creating 
+file containing two `KafkaTopic` custom resources is deployed to the OpenShift cluster and used by the Topic Controller for creating 
 such topics.
 
 ```
