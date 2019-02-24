@@ -17,3 +17,7 @@ velocity.log
 
 # OS X
 .DS_Store
+
+# VS Code
+.factorypath
+.vscode
